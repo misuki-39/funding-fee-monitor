@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { handle } from "hono/vercel";
-import { createApiApp } from "../../server/app.js";
+import { createApiApp } from "../../../server/app.js";
 
 const app = new Hono();
 app.route("/api", createApiApp());
