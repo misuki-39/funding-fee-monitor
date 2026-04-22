@@ -3,8 +3,7 @@
   "buildCommand": "pnpm run build:web",
   "outputDirectory": "dist/client",
   "installCommand": "pnpm install --frozen-lockfile",
-  "framework": null,
   "rewrites": [
-    { "source": "/assets/:base", "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
