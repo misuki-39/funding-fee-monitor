@@ -3,6 +3,7 @@
   "buildCommand": "pnpm run build:web",
   "outputDirectory": "dist/client",
   "installCommand": "pnpm install --frozen-lockfile",
+  "regions": ["hkg1"],
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
