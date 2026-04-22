@@ -1,0 +1,11 @@
+.group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.active {
+  background: var(--accent);
+  color: #fff7ef;
+  box-shadow: 0 10px 24px rgba(157, 60, 23, 0.16);
+}

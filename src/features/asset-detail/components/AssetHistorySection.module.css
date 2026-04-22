@@ -1,0 +1,162 @@
+.panel {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+  padding: 24px;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 20px;
+}
+
+.title {
+  margin: 6px 0 0;
+  font-size: clamp(1.35rem, 1.8vw, 1.8rem);
+  letter-spacing: -0.04em;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.daysControl,
+.marketControls {
+  display: grid;
+  gap: 10px;
+}
+
+.controlLabel {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.daysRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.daysInput {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(54, 41, 22, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 250, 242, 0.9);
+  color: var(--text);
+}
+
+.marketList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.marketOption {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(54, 41, 22, 0.12);
+  background: rgba(255, 250, 242, 0.88);
+  font-weight: 600;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.statusBlock {
+  display: grid;
+  gap: 10px;
+}
+
+.chartGrid {
+  display: grid;
+  gap: 18px;
+}
+
+.chartCard {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(54, 41, 22, 0.08);
+  background: rgba(255, 252, 246, 0.92);
+}
+
+.chartHead {
+  display: grid;
+  gap: 6px;
+}
+
+.chartTitle {
+  margin: 0;
+  font-size: 1.08rem;
+  letter-spacing: -0.02em;
+}
+
+.chartDescription {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.chartFrame {
+  width: 100%;
+  min-height: 340px;
+}
+
+.tooltip {
+  display: grid;
+  gap: 8px;
+  min-width: 220px;
+  padding: 12px 14px;
+  border: 1px solid rgba(54, 41, 22, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 250, 242, 0.96);
+  box-shadow: 0 14px 28px rgba(70, 46, 15, 0.12);
+}
+
+.tooltipRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  font-size: 0.92rem;
+}
+
+.tooltipLabel {
+  font-weight: 700;
+}
+
+@media (max-width: 860px) {
+  .panel {
+    padding: 18px;
+  }
+
+  .head,
+  .controls {
+    grid-template-columns: 1fr;
+  }
+
+  .head {
+    align-items: flex-start;
+  }
+
+  .daysRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

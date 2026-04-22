@@ -1,0 +1,30 @@
+import type { MarketConfig, MarketKey } from "../types/market.js";
+
+export const PAGE_SIZE = 10;
+export const ASSET_DETAIL_SOURCE_LABEL = "Binance premiumIndex + fundingInfo | OKX funding-rate + mark-price | Gate contract detail";
+export const ASSET_HISTORY_SOURCE_LABEL = "Binance fundingRate | OKX funding-rate-history + history-mark-price-candles | Gate funding_rate + candlesticks";
+
+export const MARKETS: Record<MarketKey, MarketConfig> = {
+  okx: {
+    key: "okx",
+    label: "OKX",
+    title: "OKX Funding Rate",
+    sourceUrl: "https://www.okx.com/api/v5/public/funding-rate?instId=ANY"
+  },
+  binance: {
+    key: "binance",
+    label: "Binance",
+    title: "Binance Funding Rate",
+    sourceUrl: "https://fapi.binance.com/fapi/v1/premiumIndex + /fapi/v1/fundingInfo"
+  },
+  gate: {
+    key: "gate",
+    label: "Gate.io",
+    title: "Gate.io Funding Rate",
+    sourceUrl: "https://api.gateio.ws/api/v4/futures/usdt/contracts"
+  }
+};
+
+export function isMarketKey(value: string): value is MarketKey {
+  return value === "okx" || value === "binance" || value === "gate";
+}

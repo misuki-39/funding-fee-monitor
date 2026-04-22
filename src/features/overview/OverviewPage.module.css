@@ -1,0 +1,49 @@
+.hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+  padding: 28px;
+  margin-bottom: 18px;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.filters {
+  margin-bottom: 18px;
+}
+
+.statusBlock {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.footer {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.footer code {
+  word-break: break-word;
+}
+
+@media (max-width: 860px) {
+  .hero {
+    flex-direction: column;
+  }
+}

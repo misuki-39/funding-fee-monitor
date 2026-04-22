@@ -1,0 +1,13 @@
+.banner {
+  border-radius: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  background: var(--panel-strong);
+  color: var(--muted);
+}
+
+.error {
+  color: var(--negative);
+  background: rgba(156, 38, 52, 0.08);
+  border-color: rgba(156, 38, 52, 0.18);
+}
