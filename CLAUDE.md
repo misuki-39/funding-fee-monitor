@@ -27,11 +27,20 @@ Funding Rate Monitor — a React + TypeScript web app that displays and compares
 ### Server (`server/`)
 - **`server/app.ts`** — Portable Hono app (API route definitions, DI via `AppDependencies`). Used by both deployment entries below.
 - **`server/node.ts`** — Node adapter: wraps `createApiApp()` with `@hono/node-server` and serves the client build. Used by `pnpm run dev:server` and `pnpm run preview`.
+- **`server/vercel.ts`** — Vercel Node.js adapter: hand-rolled `IncomingMessage`→`Request`→`app.fetch`→`ServerResponse` bridge. Holds the single Hono app instance re-exported by every `api/*.ts` file. Do **not** replace this with `export default handle(app)` from `hono/vercel` — that returns a fetch handler, and Vercel's Node.js runtime expects `(req, res) => void` as the default export, so requests would hang 300s.
 - **`server/exchanges/`** — per-exchange adapters (`binance.ts`, `okx.ts`, `gate.ts`) that call upstream APIs and normalize responses
 - **`server/services/`** — service layer (`fundingRates.ts`, `assetDetails.ts`, `assetHistory.ts`) that orchestrate exchange adapters
 
 ### Vercel entry (`api/`)
-- **`api/[...path].ts`** — Vercel Serverless Function adapter (catch-all file route). Wraps `createApiApp()` with `hono/vercel` so the same BFF code ships on Vercel. All `/api/*` requests route here via Vercel's native file-based routing — no rewrite needed.
+One thin file per deployed route; each is a one-line re-export of `vercelNodeHandler` from `server/vercel.ts`:
+- `api/health.ts` → `/api/health`
+- `api/markets/[market]/funding-rates.ts` → `/api/markets/:market/funding-rates`
+- `api/assets/[base]/index.ts` → `/api/assets/:base`
+- `api/assets/[base]/history.ts` → `/api/assets/:base/history`
+
+Rules for this directory:
+- Never combine `api/[param].ts` with `api/[param]/*.ts` — use `[param]/index.ts` for the base route.
+- `vercel.json` pins `"regions": ["hkg1"]`; the default US region (`iad1`) is geo-blocked by Binance, OKX, and Gate.io.
 
 ### Shared code
 Types in `src/shared/types/` and config in `src/shared/config/` are imported by both client and server. The server imports these with `.js` extensions (ESM resolution).
