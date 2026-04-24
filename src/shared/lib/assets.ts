@@ -7,14 +7,14 @@ export function extractBaseSymbol(market: MarketKey, symbol: string): string {
     throw new Error(`Invalid ${market} symbol: ${symbol}`);
   }
 
-  if (market === "binance") {
+  if (market === "binance" || market === "bitget") {
     for (const quoteSuffix of binanceQuoteSuffixes) {
       if (symbol.endsWith(quoteSuffix)) {
         return symbol.slice(0, -quoteSuffix.length);
       }
     }
 
-    throw new Error(`Unsupported Binance symbol: ${symbol}`);
+    throw new Error(`Unsupported ${market === "binance" ? "Binance" : "Bitget"} symbol: ${symbol}`);
   }
 
   if (market === "okx") {
@@ -35,7 +35,7 @@ export function extractBaseSymbol(market: MarketKey, symbol: string): string {
 }
 
 export function buildAssetSymbol(market: MarketKey, base: string): string {
-  if (market === "binance") {
+  if (market === "binance" || market === "bitget") {
     return `${base}USDT`;
   }
 

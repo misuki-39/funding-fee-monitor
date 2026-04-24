@@ -1,8 +1,10 @@
 import type { MarketConfig, MarketKey } from "../types/market.js";
 
 export const PAGE_SIZE = 10;
-export const ASSET_DETAIL_SOURCE_LABEL = "Binance premiumIndex + fundingInfo | OKX funding-rate + mark-price | Gate contract detail";
-export const ASSET_HISTORY_SOURCE_LABEL = "Binance fundingRate | OKX funding-rate-history + history-mark-price-candles | Gate funding_rate + candlesticks";
+export const ASSET_DETAIL_SOURCE_LABEL =
+  "Binance premiumIndex + fundingInfo | OKX funding-rate + mark-price | Gate contract detail | Bitget current-fund-rate + symbol-price";
+export const ASSET_HISTORY_SOURCE_LABEL =
+  "Binance fundingRate | OKX funding-rate-history + history-mark-price-candles | Gate funding_rate + candlesticks | Bitget history-fund-rate + candles(MARK)";
 
 export const MARKETS: Record<MarketKey, MarketConfig> = {
   okx: {
@@ -22,9 +24,15 @@ export const MARKETS: Record<MarketKey, MarketConfig> = {
     label: "Gate.io",
     title: "Gate.io Funding Rate",
     sourceUrl: "https://api.gateio.ws/api/v4/futures/usdt/contracts"
+  },
+  bitget: {
+    key: "bitget",
+    label: "Bitget",
+    title: "Bitget Funding Rate",
+    sourceUrl: "https://api.bitget.com/api/v2/mix/market/current-fund-rate?productType=usdt-futures"
   }
 };
 
 export function isMarketKey(value: string): value is MarketKey {
-  return value === "okx" || value === "binance" || value === "gate";
+  return value === "okx" || value === "binance" || value === "gate" || value === "bitget";
 }

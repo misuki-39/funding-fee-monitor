@@ -39,8 +39,8 @@ export function OverviewPage() {
           <p className="eyebrow">Perpetual Funding Dashboard</p>
           <h1 className="title">Funding Rate Monitor</h1>
           <p className="description">
-            Compare live funding rates across OKX, Binance, and Gate.io. Filter near-term settlements and drill into
-            individual contracts for cross-exchange detail.
+            Compare live funding rates across OKX, Binance, Gate.io, and Bitget. Filter near-term settlements and drill
+            into individual contracts for cross-exchange detail.
           </p>
         </div>
         <div className={styles.controls}>

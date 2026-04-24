@@ -51,6 +51,16 @@ vi.mock("./api.js", () => ({
           cycleLabel: "4h",
           available: true,
           errorMessage: null
+        },
+        {
+          market: "bitget",
+          base: "龙虾",
+          symbol: "龙虾USDT",
+          fundingRate: -0.0003,
+          markPrice: 1.22,
+          cycleLabel: "2h",
+          available: true,
+          errorMessage: null
         }
       ],
       fetchedAt: 456,
@@ -90,6 +100,19 @@ vi.mock("./api.js", () => ({
           ],
           available: true,
           errorMessage: null
+        },
+        {
+          market: "bitget",
+          base: "龙虾",
+          symbol: "龙虾USDT",
+          points: [
+            { fundingTimeMs: 3_000, fundingRate: -0.0003 }
+          ],
+          pricePoints: [
+            { timeMs: 3_000, price: 1.22 }
+          ],
+          available: true,
+          errorMessage: null
         }
       ],
       fetchedAt: 789,
@@ -124,6 +147,7 @@ describe("AssetDetailPage", () => {
     expect(screen.getByRole("columnheader", { name: "Annualized" })).toBeInTheDocument();
     expect(screen.getByText("8h")).toBeInTheDocument();
     expect(screen.getByText("10.950%")).toBeInTheDocument();
+    expect(screen.getAllByText("龙虾USDT").length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "Funding History and Pairwise Cumulative Spread" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Apply" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Funding + Price History" })).toBeInTheDocument();

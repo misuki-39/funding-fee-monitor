@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { mergeBinanceRows, normalizeBinanceAssetDetail, normalizeBinanceHistoryPoint } from "./binance.js";
+import { normalizeBitgetAssetDetail, normalizeBitgetCandle, normalizeBitgetFundingHistoryPoint, normalizeBitgetRow } from "./bitget.js";
 import { normalizeGateAssetDetail, normalizeGateFundingHistoryPoint } from "./gate.js";
 import { normalizeOkxAssetDetail, normalizeOkxFundingHistoryPoint } from "./okx.js";
 
@@ -95,6 +96,66 @@ describe("exchange adapters", () => {
     })).toEqual({
       fundingTimeMs: 1775059200 * 1000,
       fundingRate: 0.0003
+    });
+  });
+
+  test("normalizeBitgetRow reads current funding rate rows", () => {
+    expect(normalizeBitgetRow({
+      symbol: "WALUSDT",
+      fundingRate: "0.0004",
+      fundingRateInterval: "4",
+      nextUpdate: "1775059200000"
+    })).toEqual({
+      symbol: "WALUSDT",
+      fundingRate: 0.0004,
+      cycleLabel: "4h",
+      settlementTimeMs: 1775059200000
+    });
+  });
+
+  test("normalizeBitgetAssetDetail merges funding rate and mark price", () => {
+    expect(normalizeBitgetAssetDetail(
+      {
+        symbol: "WALUSDT",
+        fundingRate: "0.0004",
+        fundingRateInterval: "4",
+        nextUpdate: "1775059200000"
+      },
+      {
+        symbol: "WALUSDT",
+        markPrice: "1.2345"
+      }
+    )).toEqual({
+      symbol: "WALUSDT",
+      fundingRate: 0.0004,
+      markPrice: 1.2345,
+      cycleLabel: "4h"
+    });
+  });
+
+  test("normalizeBitgetFundingHistoryPoint reads funding history rows", () => {
+    expect(normalizeBitgetFundingHistoryPoint({
+      symbol: "WALUSDT",
+      fundingRate: "-0.0005",
+      fundingTime: "1775059200000"
+    })).toEqual({
+      fundingTimeMs: 1775059200000,
+      fundingRate: -0.0005
+    });
+  });
+
+  test("normalizeBitgetCandle reads mark candle rows", () => {
+    expect(normalizeBitgetCandle([
+      "1775059200000",
+      "1.2345",
+      "1.25",
+      "1.21",
+      "1.24",
+      "10",
+      "12.3"
+    ])).toEqual({
+      timeMs: 1775059200000,
+      price: 1.2345
     });
   });
 });

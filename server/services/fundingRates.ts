@@ -1,4 +1,5 @@
 import { fetchBinanceRows } from "../exchanges/binance.js";
+import { fetchBitgetRows } from "../exchanges/bitget.js";
 import { fetchGateRows } from "../exchanges/gate.js";
 import { fetchOkxRows } from "../exchanges/okx.js";
 import type { FundingRow, MarketKey } from "../../src/shared/types/market.js";
@@ -6,7 +7,8 @@ import type { FundingRow, MarketKey } from "../../src/shared/types/market.js";
 const marketFetchers: Record<MarketKey, () => Promise<FundingRow[]>> = {
   okx: fetchOkxRows,
   binance: fetchBinanceRows,
-  gate: fetchGateRows
+  gate: fetchGateRows,
+  bitget: fetchBitgetRows
 };
 
 export function fetchFundingRatesByMarket(market: MarketKey) {

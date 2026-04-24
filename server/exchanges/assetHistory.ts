@@ -1,15 +1,17 @@
 import { buildAssetSymbol } from "../../src/shared/lib/assets.js";
 import type { AssetFundingHistoryMarketData, AssetFundingHistoryRow, MarketKey } from "../../src/shared/types/market.js";
 import { fetchBinanceAssetHistory } from "./binance.js";
+import { fetchBitgetAssetHistory } from "./bitget.js";
 import { fetchGateAssetHistory } from "./gate.js";
 import { fetchOkxAssetHistory } from "./okx.js";
 
-const historyMarketOrder: MarketKey[] = ["okx", "binance", "gate"];
+const historyMarketOrder: MarketKey[] = ["okx", "binance", "gate", "bitget"];
 
 const assetHistoryFetchers: Record<MarketKey, (symbol: string, startTimeMs: number, endTimeMs: number) => Promise<AssetFundingHistoryMarketData>> = {
   okx: fetchOkxAssetHistory,
   binance: fetchBinanceAssetHistory,
-  gate: fetchGateAssetHistory
+  gate: fetchGateAssetHistory,
+  bitget: fetchBitgetAssetHistory
 };
 
 export function createAssetHistoryRow(

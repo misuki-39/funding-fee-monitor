@@ -23,6 +23,26 @@ describe("api app", () => {
     expect(payload.rows).toHaveLength(1);
   });
 
+  test("returns funding rates response for bitget", async () => {
+    const getFundingRates = vi.fn().mockResolvedValue([
+      { symbol: "WALUSDT", fundingRate: 0.0001, cycleLabel: "4h", settlementTimeMs: 1_000 }
+    ]);
+    const app = createApiApp({
+      getFundingRates,
+      getAssetDetails: vi.fn(),
+      getAssetHistory: vi.fn(),
+      now: () => 321
+    });
+
+    const response = await app.request("/markets/bitget/funding-rates");
+    const payload = await response.json() as FundingRatesResponse;
+
+    expect(response.status).toBe(200);
+    expect(payload.market).toBe("bitget");
+    expect(payload.fetchedAt).toBe(321);
+    expect(payload.rows[0]?.symbol).toBe("WALUSDT");
+  });
+
   test("returns asset detail response", async () => {
     const getAssetDetails = vi.fn().mockResolvedValue([
       {
