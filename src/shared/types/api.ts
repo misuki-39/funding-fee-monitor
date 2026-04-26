@@ -14,12 +14,12 @@ export interface AssetDetailResponse {
   sourceLabel: string;
 }
 
-export interface AssetFundingHistoryResponse {
+export interface AssetFundingHistoryMarketResponse {
   base: string;
+  market: MarketKey;
   days: number;
-  rows: AssetFundingHistoryRow[];
+  row: AssetFundingHistoryRow;
   fetchedAt: number;
-  sourceLabel: string;
 }
 
 export interface HealthResponse {

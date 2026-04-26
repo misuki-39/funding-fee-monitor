@@ -28,12 +28,6 @@ function getSelectedRows(rows: AssetFundingHistoryRow[], selectedMarkets: Market
     .sort((left, right) => selectedMarkets.indexOf(left.market) - selectedMarkets.indexOf(right.market));
 }
 
-export function getDefaultHistoryMarkets(rows: AssetFundingHistoryRow[]): MarketKey[] {
-  return rows
-    .filter((row) => row.available && (row.points.length > 0 || row.pricePoints.length > 0))
-    .map((row) => row.market);
-}
-
 export function buildFundingHistoryChartData(
   rows: AssetFundingHistoryRow[],
   selectedMarkets: MarketKey[]

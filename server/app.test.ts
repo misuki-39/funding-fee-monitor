@@ -1,5 +1,9 @@
 import { describe, expect, test, vi } from "vitest";
-import type { AssetDetailResponse, AssetFundingHistoryResponse, FundingRatesResponse } from "../src/shared/types/api.js";
+import type {
+  AssetDetailResponse,
+  AssetFundingHistoryMarketResponse,
+  FundingRatesResponse
+} from "../src/shared/types/api.js";
 import { createApiApp } from "./app.js";
 
 describe("api app", () => {
@@ -10,7 +14,7 @@ describe("api app", () => {
     const app = createApiApp({
       getFundingRates,
       getAssetDetails: vi.fn(),
-      getAssetHistory: vi.fn(),
+      getAssetHistoryByMarket: vi.fn(),
       now: () => 123
     });
 
@@ -30,7 +34,7 @@ describe("api app", () => {
     const app = createApiApp({
       getFundingRates,
       getAssetDetails: vi.fn(),
-      getAssetHistory: vi.fn(),
+      getAssetHistoryByMarket: vi.fn(),
       now: () => 321
     });
 
@@ -59,7 +63,7 @@ describe("api app", () => {
     const app = createApiApp({
       getFundingRates: vi.fn(),
       getAssetDetails,
-      getAssetHistory: vi.fn(),
+      getAssetHistoryByMarket: vi.fn(),
       now: () => 456
     });
 
@@ -77,7 +81,7 @@ describe("api app", () => {
     const app = createApiApp({
       getFundingRates: vi.fn(),
       getAssetDetails: vi.fn(),
-      getAssetHistory: vi.fn(),
+      getAssetHistoryByMarket: vi.fn(),
       now: () => 0
     });
 
@@ -86,36 +90,50 @@ describe("api app", () => {
     expect(response.status).toBe(400);
   });
 
-  test("returns asset funding history response", async () => {
-    const getAssetHistory = vi.fn().mockResolvedValue([
-      {
-        market: "okx",
-        base: "龙虾",
-        symbol: "龙虾-USDT-SWAP",
-        points: [
-          { fundingTimeMs: 1_000, fundingRate: 0.0001 }
-        ],
-        pricePoints: [
-          { timeMs: 1_000, price: 1.23 }
-        ],
-        available: true,
-        errorMessage: null
-      }
-    ]);
+  test("returns asset funding history market response with cache headers", async () => {
+    const getAssetHistoryByMarket = vi.fn().mockResolvedValue({
+      market: "binance",
+      base: "龙虾",
+      symbol: "龙虾USDT",
+      points: [
+        { fundingTimeMs: 1_000, fundingRate: 0.0001 }
+      ],
+      pricePoints: [
+        { timeMs: 1_000, price: 1.23 }
+      ],
+      available: true,
+      errorMessage: null
+    });
     const app = createApiApp({
       getFundingRates: vi.fn(),
       getAssetDetails: vi.fn(),
-      getAssetHistory,
-      now: () => 789
+      getAssetHistoryByMarket,
+      now: () => 987
     });
 
-    const response = await app.request("/assets/%E9%BE%99%E8%99%BE/history?days=7");
-    const payload = await response.json() as AssetFundingHistoryResponse;
+    const response = await app.request("/assets/%E9%BE%99%E8%99%BE/history/binance?days=7");
+    const payload = await response.json() as AssetFundingHistoryMarketResponse;
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("public, max-age=0, s-maxage=900, stale-while-revalidate=60");
     expect(payload.base).toBe("龙虾");
+    expect(payload.market).toBe("binance");
     expect(payload.days).toBe(7);
-    expect(payload.fetchedAt).toBe(789);
-    expect(payload.rows[0].pricePoints[0]?.price).toBe(1.23);
+    expect(payload.fetchedAt).toBe(987);
+    expect(payload.row.pricePoints[0]?.price).toBe(1.23);
+  });
+
+  test("does not cache failed asset history market fetches", async () => {
+    const app = createApiApp({
+      getFundingRates: vi.fn(),
+      getAssetDetails: vi.fn(),
+      getAssetHistoryByMarket: vi.fn().mockRejectedValue(new Error("upstream failed")),
+      now: () => 0
+    });
+
+    const response = await app.request("/assets/%E9%BE%99%E8%99%BE/history/binance?days=7");
+
+    expect(response.status).toBe(500);
+    expect(response.headers.get("cache-control")).toBeNull();
   });
 });

@@ -5,8 +5,6 @@ import { fetchBitgetAssetHistory } from "./bitget.js";
 import { fetchGateAssetHistory } from "./gate.js";
 import { fetchOkxAssetHistory } from "./okx.js";
 
-const historyMarketOrder: MarketKey[] = ["okx", "binance", "gate", "bitget"];
-
 const assetHistoryFetchers: Record<MarketKey, (symbol: string, startTimeMs: number, endTimeMs: number) => Promise<AssetFundingHistoryMarketData>> = {
   okx: fetchOkxAssetHistory,
   binance: fetchBinanceAssetHistory,
@@ -44,23 +42,10 @@ export function createAssetHistoryRow(
   };
 }
 
-export async function fetchAssetHistoryRows(base: string, days: number, nowMs = Date.now()): Promise<AssetFundingHistoryRow[]> {
+export async function fetchAssetHistoryRow(base: string, market: MarketKey, days: number, nowMs = Date.now()): Promise<AssetFundingHistoryRow> {
   const startTimeMs = nowMs - days * 24 * 60 * 60 * 1000;
+  const symbol = buildAssetSymbol(market, base);
+  const detail = await assetHistoryFetchers[market](symbol, startTimeMs, nowMs);
 
-  return Promise.all(historyMarketOrder.map(async (market) => {
-    const symbol = buildAssetSymbol(market, base);
-
-    try {
-      const detail = await assetHistoryFetchers[market](symbol, startTimeMs, nowMs);
-      return createAssetHistoryRow(market, base, symbol, detail, null);
-    } catch (error) {
-      return createAssetHistoryRow(
-        market,
-        base,
-        symbol,
-        null,
-        error instanceof Error ? error.message : String(error)
-      );
-    }
-  }));
+  return createAssetHistoryRow(market, base, symbol, detail, null);
 }

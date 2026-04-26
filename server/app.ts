@@ -1,23 +1,30 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { ASSET_DETAIL_SOURCE_LABEL, ASSET_HISTORY_SOURCE_LABEL, MARKETS, isMarketKey } from "../src/shared/config/markets.js";
-import type { AssetDetailResponse, AssetFundingHistoryResponse, FundingRatesResponse, HealthResponse } from "../src/shared/types/api.js";
+import { ASSET_DETAIL_SOURCE_LABEL, MARKETS, isMarketKey } from "../src/shared/config/markets.js";
+import type {
+  AssetDetailResponse,
+  AssetFundingHistoryMarketResponse,
+  FundingRatesResponse,
+  HealthResponse
+} from "../src/shared/types/api.js";
 import type { AssetDetailRow, AssetFundingHistoryRow, FundingRow, MarketKey } from "../src/shared/types/market.js";
 import { fetchAssetDetails } from "./services/assetDetails.js";
-import { fetchAssetHistory } from "./services/assetHistory.js";
+import { fetchAssetHistoryByMarket } from "./services/assetHistory.js";
 import { fetchFundingRatesByMarket } from "./services/fundingRates.js";
+
+const ASSET_HISTORY_CACHE_CONTROL = "public, max-age=0, s-maxage=900, stale-while-revalidate=60";
 
 interface AppDependencies {
   getFundingRates: (market: MarketKey) => Promise<FundingRow[]>;
   getAssetDetails: (base: string) => Promise<AssetDetailRow[]>;
-  getAssetHistory: (base: string, days: number) => Promise<AssetFundingHistoryRow[]>;
+  getAssetHistoryByMarket: (base: string, market: MarketKey, days: number) => Promise<AssetFundingHistoryRow>;
   now: () => number;
 }
 
 const defaultDependencies: AppDependencies = {
   getFundingRates: fetchFundingRatesByMarket,
   getAssetDetails: fetchAssetDetails,
-  getAssetHistory: fetchAssetHistory,
+  getAssetHistoryByMarket: fetchAssetHistoryByMarket,
   now: () => Date.now()
 };
 
@@ -69,8 +76,9 @@ export function createApiApp(dependencies: AppDependencies = defaultDependencies
     return c.json(response);
   });
 
-  app.get("/assets/:base/history", async (c) => {
+  app.get("/assets/:base/history/:market", async (c) => {
     const base = c.req.param("base");
+    const marketValue = c.req.param("market");
     const daysValue = c.req.query("days") ?? "7";
     const days = Number(daysValue);
 
@@ -78,19 +86,24 @@ export function createApiApp(dependencies: AppDependencies = defaultDependencies
       throw new HTTPException(400, { message: "Missing asset base" });
     }
 
+    if (!isMarketKey(marketValue)) {
+      throw new HTTPException(400, { message: `Unsupported market: ${marketValue}` });
+    }
+
     if (!Number.isInteger(days) || days < 1 || days > 14) {
       throw new HTTPException(400, { message: `Invalid history days: ${daysValue}` });
     }
 
-    const rows = await dependencies.getAssetHistory(base, days);
-    const response: AssetFundingHistoryResponse = {
+    const row = await dependencies.getAssetHistoryByMarket(base, marketValue, days);
+    const response: AssetFundingHistoryMarketResponse = {
       base,
+      market: marketValue,
       days,
-      rows,
-      fetchedAt: dependencies.now(),
-      sourceLabel: ASSET_HISTORY_SOURCE_LABEL
+      row,
+      fetchedAt: dependencies.now()
     };
 
+    c.header("Cache-Control", ASSET_HISTORY_CACHE_CONTROL);
     return c.json(response);
   });
 

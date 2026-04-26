@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import type { UseQueryResult } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import {
   CartesianGrid,
   Legend,
@@ -9,19 +10,28 @@ import {
   XAxis,
   YAxis
 } from "recharts";
-import { MARKETS } from "../../../shared/config/markets.js";
+import { ASSET_HISTORY_SOURCE_LABEL, MARKETS } from "../../../shared/config/markets.js";
 import { formatAbsoluteTime, formatPrice, formatRate } from "../../../shared/lib/formatters.js";
+import type { AssetFundingHistoryMarketResponse } from "../../../shared/types/api.js";
 import type { AssetFundingHistoryRow, MarketKey } from "../../../shared/types/market.js";
 import { Button } from "../../../shared/ui/Button.js";
 import { MetaPill } from "../../../shared/ui/MetaPill.js";
 import { StatusBanner } from "../../../shared/ui/StatusBanner.js";
-import { useAssetHistoryQuery } from "../api.js";
+import { useAssetHistoryQueries } from "../api.js";
 import {
   buildFundingHistoryChartData,
   buildPairwiseComparisonChartData,
-  getDefaultHistoryMarkets,
   type PairwiseComparisonLine
 } from "../lib/historyCharts.js";
+import {
+  getGlobalDefaultHistoryMarkets,
+  getInitialHistoryMarkets,
+  HISTORY_MARKET_ORDER,
+  persistBaseHistoryMarkets,
+  persistGlobalDefaultHistoryMarkets,
+  sameHistoryMarkets,
+  sortHistoryMarkets
+} from "../lib/historyPreferences.js";
 import styles from "./AssetHistorySection.module.css";
 
 const marketColors: Record<MarketKey, string> = {
@@ -35,10 +45,6 @@ const pairColors = ["#2563eb", "#d946ef", "#ea580c", "#0d9488", "#7c3aed", "#dc2
 
 function getPairColor(index: number): string {
   return pairColors[index % pairColors.length];
-}
-
-function sameMarkets(left: MarketKey[], right: MarketKey[]) {
-  return left.length === right.length && left.every((market, index) => market === right[index]);
 }
 
 interface AssetHistorySectionProps {
@@ -133,88 +139,107 @@ function trimRows(rows: AssetFundingHistoryRow[], days: number, fetchedDays: num
   }));
 }
 
+type HistoryQuery = UseQueryResult<AssetFundingHistoryMarketResponse, Error>;
+
+function getMarketStatusLabel(query: HistoryQuery | undefined): string {
+  if (!query) return "Not loaded";
+  if (query.isFetching) return "Loading...";
+  if (query.isError) return "Failed";
+  if (query.data) return "Ready";
+  return "Not loaded";
+}
+
 export function AssetHistorySection({ base }: AssetHistorySectionProps) {
   const [draftDays, setDraftDays] = useState("7");
   const [days, setDays] = useState(7);
   const [fetchedDays, setFetchedDays] = useState(7);
-  const [selectedMarkets, setSelectedMarkets] = useState<MarketKey[]>([]);
+  const [selectedMarkets, setSelectedMarkets] = useState<MarketKey[]>(() => getInitialHistoryMarkets(base));
+  const [globalDefaultMarkets, setGlobalDefaultMarkets] = useState<MarketKey[]>(() => getGlobalDefaultHistoryMarkets());
   const [selectedPairKeys, setSelectedPairKeys] = useState<Set<string>>(new Set());
-  const query = useAssetHistoryQuery(base, fetchedDays);
+  const [prevBase, setPrevBase] = useState(base);
+
+  if (prevBase !== base) {
+    setPrevBase(base);
+    setSelectedMarkets(getInitialHistoryMarkets(base));
+    setSelectedPairKeys(new Set());
+  }
+
+  const queries = useAssetHistoryQueries(base, fetchedDays, selectedMarkets);
+
+  const queryByMarket = useMemo(
+    () => new Map(selectedMarkets.map((market, index) => [market, queries[index]])),
+    [selectedMarkets, queries]
+  );
+  const loadedRows = useMemo(
+    () => queries.flatMap((query) => (query.data ? [query.data.row] : [])),
+    [queries]
+  );
+  const errorMessages = selectedMarkets.flatMap((market) => {
+    const query = queryByMarket.get(market);
+    if (!query?.isError) return [];
+    return [`${MARKETS[market].label}: ${query.error.message}`];
+  });
+  const isHistoryPending = selectedMarkets.length > 0 && queries.some((query) => query.isPending && !query.data);
+  const isHistoryFetching = queries.some((query) => query.isFetching);
 
   const trimmedRows = useMemo(
-    () => trimRows(query.data?.rows ?? [], days, fetchedDays),
-    [query.data?.rows, days, fetchedDays]
+    () => trimRows(loadedRows, days, fetchedDays),
+    [days, fetchedDays, loadedRows]
   );
-  const availableMarkets = useMemo(() => getDefaultHistoryMarkets(trimmedRows), [trimmedRows]);
-
-  useEffect(() => {
-    if (query.isPending) return;
-
-    setSelectedMarkets((current) => {
-      if (current.length === 0) {
-        return availableMarkets;
-      }
-
-      const filtered = current.filter((market) => availableMarkets.includes(market));
-      return sameMarkets(current, filtered) ? current : filtered.length > 0 ? filtered : availableMarkets;
-    });
-  }, [availableMarkets, query.isPending]);
 
   const parsedDraftDays = Number(draftDays);
   const isValidDraftDays = Number.isInteger(parsedDraftDays) && parsedDraftDays >= 1 && parsedDraftDays <= 14;
+  const isCurrentSelectionGlobalDefault = sameHistoryMarkets(selectedMarkets, globalDefaultMarkets);
   const fundingChartData = useMemo(
     () => buildFundingHistoryChartData(trimmedRows, selectedMarkets),
-    [trimmedRows, selectedMarkets]
+    [selectedMarkets, trimmedRows]
   );
   const pairwiseChart = useMemo(
     () => buildPairwiseComparisonChartData(trimmedRows, selectedMarkets),
-    [trimmedRows, selectedMarkets]
+    [selectedMarkets, trimmedRows]
   );
 
   const timeDomain = useMemo<[number, number] | undefined>(() => {
     if (fundingChartData.length === 0) return undefined;
-    const first = fundingChartData[0].timeMs as number;
-    const last = fundingChartData[fundingChartData.length - 1].timeMs as number;
+    const first = fundingChartData[0].timeMs;
+    const last = fundingChartData[fundingChartData.length - 1].timeMs;
     return [first, last];
   }, [fundingChartData]);
 
-  // Stable string key for pair lines to avoid infinite effect loops from new array refs
-  const pairLineKeys = useMemo(
-    () => pairwiseChart.lines.map((l) => l.key).join(","),
+  const availablePairKeys = useMemo(
+    () => new Set(pairwiseChart.lines.map((line) => line.key)),
     [pairwiseChart.lines]
   );
 
-  // Auto-select new pairs, keep existing selections for pairs that still exist
-  useEffect(() => {
-    const availableKeys = new Set(pairLineKeys.split(",").filter(Boolean));
-    setSelectedPairKeys((current) => {
-      const filtered = new Set([...current].filter((k) => availableKeys.has(k)));
-      if (filtered.size === 0 && availableKeys.size > 0) return availableKeys;
-      return filtered.size === current.size && [...filtered].every((k) => current.has(k)) ? current : filtered;
-    });
-  }, [pairLineKeys]);
+  const filteredPairKeys = useMemo(() => {
+    const filtered = new Set([...selectedPairKeys].filter((key) => availablePairKeys.has(key)));
+    if (filtered.size === 0 && availablePairKeys.size > 0) return availablePairKeys;
+    return filtered;
+  }, [availablePairKeys, selectedPairKeys]);
 
   const visiblePairLines = useMemo(
-    () => pairwiseChart.lines.filter((l) => selectedPairKeys.has(l.key)),
-    [pairwiseChart.lines, selectedPairKeys]
+    () => pairwiseChart.lines.filter((l) => filteredPairKeys.has(l.key)),
+    [pairwiseChart.lines, filteredPairKeys]
   );
 
   function togglePair(key: string) {
-    setSelectedPairKeys((current) => {
-      const next = new Set(current);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
+    const next = new Set(filteredPairKeys);
+    if (next.has(key)) {
+      next.delete(key);
+    } else {
+      next.add(key);
+    }
+    setSelectedPairKeys(next);
   }
 
   function toggleMarket(market: MarketKey) {
-    setSelectedMarkets((current) => current.includes(market)
-      ? current.filter((item) => item !== market)
-      : [...current, market]);
+    const next = sortHistoryMarkets(
+      selectedMarkets.includes(market)
+        ? selectedMarkets.filter((item) => item !== market)
+        : [...selectedMarkets, market]
+    );
+    setSelectedMarkets(next);
+    persistBaseHistoryMarkets(base, next);
   }
 
   return (
@@ -223,7 +248,7 @@ export function AssetHistorySection({ base }: AssetHistorySectionProps) {
         <div>
           <h2 className={styles.title}>Funding History and Pairwise Cumulative Spread</h2>
         </div>
-        <MetaPill>{query.data?.sourceLabel ?? "History sources pending"}</MetaPill>
+        <MetaPill>{ASSET_HISTORY_SOURCE_LABEL}</MetaPill>
       </div>
 
       <div className={styles.controls}>
@@ -240,7 +265,7 @@ export function AssetHistorySection({ base }: AssetHistorySectionProps) {
               onChange={(event) => setDraftDays(event.target.value)}
             />
             <Button
-              disabled={!isValidDraftDays || query.isFetching || parsedDraftDays === days}
+              disabled={!isValidDraftDays || isHistoryFetching || parsedDraftDays === days}
               onClick={() => {
                 setDays(parsedDraftDays);
                 if (parsedDraftDays > fetchedDays) {
@@ -248,31 +273,45 @@ export function AssetHistorySection({ base }: AssetHistorySectionProps) {
                 }
               }}
             >
-              {query.isFetching ? "Applying..." : "Apply"}
+              {isHistoryFetching ? "Applying..." : "Apply"}
             </Button>
           </div>
         </label>
 
         <div className={styles.marketControls}>
-          <span className={styles.controlLabel}>Exchanges</span>
+          <div className={styles.controlHeader}>
+            <span className={styles.controlLabel}>Exchanges</span>
+            <Button
+              variant="secondary"
+              disabled={selectedMarkets.length === 0 || isCurrentSelectionGlobalDefault}
+              onClick={() => setGlobalDefaultMarkets(persistGlobalDefaultHistoryMarkets(selectedMarkets))}
+            >
+              {isCurrentSelectionGlobalDefault ? "Current Default" : "Use as Global Default"}
+            </Button>
+          </div>
           <div className={styles.marketList}>
-            {availableMarkets.map((market) => (
+            {HISTORY_MARKET_ORDER.map((market) => (
               <label key={market} className={styles.marketOption}>
                 <input
                   type="checkbox"
                   checked={selectedMarkets.includes(market)}
                   onChange={() => toggleMarket(market)}
                 />
-                <span>{MARKETS[market].label}</span>
+                <span className={styles.marketText}>{MARKETS[market].label}</span>
+                <span className={styles.marketHint}>{getMarketStatusLabel(queryByMarket.get(market))}</span>
               </label>
             ))}
           </div>
+          <p className={styles.helperText}>
+            New assets start with Binance + OKX. Selecting an unchecked exchange downloads its history immediately.
+          </p>
         </div>
       </div>
 
       <div className={styles.statusBlock}>
         {!isValidDraftDays ? <StatusBanner tone="error">Lookback days must be an integer between 1 and 14.</StatusBanner> : null}
-        {query.isError ? <StatusBanner tone="error">{query.error.message}</StatusBanner> : null}
+        {isHistoryPending ? <StatusBanner>Loading selected exchange history...</StatusBanner> : null}
+        {errorMessages.map((message) => <StatusBanner key={message} tone="error">{message}</StatusBanner>)}
       </div>
 
       <div className={styles.chartGrid}>
@@ -281,7 +320,9 @@ export function AssetHistorySection({ base }: AssetHistorySectionProps) {
             <h3 className={styles.chartTitle}>Funding + Price History</h3>
             <p className={styles.chartDescription}>Each selected exchange shows raw funding rate and its own price line.</p>
           </div>
-          {fundingChartData.length === 0 ? (
+          {selectedMarkets.length === 0 ? (
+            <div className="empty-state">Select at least one exchange to load history.</div>
+          ) : fundingChartData.length === 0 ? (
             <div className="empty-state">No history returned for the selected exchanges.</div>
           ) : (
             <div className={styles.chartFrame}>
@@ -342,7 +383,7 @@ export function AssetHistorySection({ base }: AssetHistorySectionProps) {
                   <label key={line.key} className={styles.marketOption}>
                     <input
                       type="checkbox"
-                      checked={selectedPairKeys.has(line.key)}
+                      checked={filteredPairKeys.has(line.key)}
                       onChange={() => togglePair(line.key)}
                     />
                     <span>{MARKETS[line.left].label} / {MARKETS[line.right].label}</span>

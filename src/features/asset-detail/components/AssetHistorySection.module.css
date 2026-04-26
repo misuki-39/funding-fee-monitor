@@ -30,6 +30,14 @@
   gap: 10px;
 }
 
+.controlHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .controlLabel {
   color: var(--muted);
   font-size: 0.8rem;
@@ -69,6 +77,22 @@
   border: 1px solid rgba(54, 41, 22, 0.12);
   background: rgba(255, 250, 242, 0.88);
   font-weight: 600;
+}
+
+.marketText {
+  color: var(--text);
+}
+
+.marketHint {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.helperText {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .meta {

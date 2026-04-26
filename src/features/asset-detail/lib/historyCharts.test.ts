@@ -2,8 +2,7 @@ import { describe, expect, test } from "vitest";
 import type { AssetFundingHistoryRow } from "../../../shared/types/market.js";
 import {
   buildFundingHistoryChartData,
-  buildPairwiseComparisonChartData,
-  getDefaultHistoryMarkets
+  buildPairwiseComparisonChartData
 } from "./historyCharts.js";
 
 const HOUR = 3_600_000;
@@ -54,10 +53,6 @@ const rows: AssetFundingHistoryRow[] = [
 ];
 
 describe("history chart helpers", () => {
-  test("gets default selected markets from available rows", () => {
-    expect(getDefaultHistoryMarkets(rows)).toEqual(["okx", "binance"]);
-  });
-
   test("builds chart with funding on hour grid and price on 15min grid", () => {
     const result = buildFundingHistoryChartData(rows, ["okx", "binance"]);
 
