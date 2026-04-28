@@ -11,13 +11,19 @@ import { useFundingRatesQuery } from "./api.js";
 import { FundingRatesTable } from "./components/FundingRatesTable.js";
 import { MarketTabs } from "./components/MarketTabs.js";
 import { SettlementFilter as SettlementFilterControl } from "./components/SettlementFilter.js";
+import { persistOverviewMarket, readOverviewMarket } from "./lib/marketPreference.js";
 import styles from "./OverviewPage.module.css";
 
 export function OverviewPage() {
-  const [market, setMarket] = useState<MarketKey>("okx");
+  const [market, setMarket] = useState<MarketKey>(() => readOverviewMarket());
   const [settlementFilter, setSettlementFilter] = useState<SettlementFilter>("all");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const query = useFundingRatesQuery(market);
+
+  const handleSelectMarket = (next: MarketKey) => {
+    setMarket(next);
+    persistOverviewMarket(next);
+  };
   const marketConfig = MARKETS[market];
   const rows = query.data?.rows ?? [];
   const visibleRows = sortRows(filterRows(rows, settlementFilter), sortDirection).slice(0, PAGE_SIZE);
@@ -44,7 +50,7 @@ export function OverviewPage() {
           </p>
         </div>
         <div className={styles.controls}>
-          <MarketTabs currentMarket={market} disabled={query.isFetching} onSelect={setMarket} />
+          <MarketTabs currentMarket={market} disabled={query.isFetching} onSelect={handleSelectMarket} />
           <Button disabled={query.isFetching} onClick={() => void query.refetch()}>
             {query.isFetching ? "Refreshing..." : "Refresh"}
           </Button>
