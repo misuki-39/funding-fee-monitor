@@ -81,6 +81,19 @@ const historyRowsByMarket = {
     ],
     available: true,
     errorMessage: null
+  },
+  bybit: {
+    market: "bybit",
+    base: "龙虾",
+    symbol: "龙虾USDT",
+    points: [
+      { fundingTimeMs: 5_000, fundingRate: 0.00025 }
+    ],
+    pricePoints: [
+      { timeMs: 5_000, price: 1.27 }
+    ],
+    available: true,
+    errorMessage: null
   }
 } as const;
 

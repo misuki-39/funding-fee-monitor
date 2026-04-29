@@ -2,6 +2,7 @@ import { buildAssetSymbol } from "../../src/shared/lib/assets.js";
 import type { AssetFundingHistoryMarketData, AssetFundingHistoryRow, MarketKey } from "../../src/shared/types/market.js";
 import { fetchBinanceAssetHistory } from "./binance.js";
 import { fetchBitgetAssetHistory } from "./bitget.js";
+import { fetchBybitAssetHistory } from "./bybit.js";
 import { fetchGateAssetHistory } from "./gate.js";
 import { fetchOkxAssetHistory } from "./okx.js";
 
@@ -9,7 +10,8 @@ const assetHistoryFetchers: Record<MarketKey, (symbol: string, startTimeMs: numb
   okx: fetchOkxAssetHistory,
   binance: fetchBinanceAssetHistory,
   gate: fetchGateAssetHistory,
-  bitget: fetchBitgetAssetHistory
+  bitget: fetchBitgetAssetHistory,
+  bybit: fetchBybitAssetHistory
 };
 
 export function createAssetHistoryRow(

@@ -47,6 +47,26 @@ describe("api app", () => {
     expect(payload.rows[0]?.symbol).toBe("WALUSDT");
   });
 
+  test("returns funding rates response for bybit", async () => {
+    const getFundingRates = vi.fn().mockResolvedValue([
+      { symbol: "WALUSDT", fundingRate: 0.0002, cycleLabel: "8h", settlementTimeMs: 2_000 }
+    ]);
+    const app = createApiApp({
+      getFundingRates,
+      getAssetDetails: vi.fn(),
+      getAssetHistoryByMarket: vi.fn(),
+      now: () => 654
+    });
+
+    const response = await app.request("/markets/bybit/funding-rates");
+    const payload = await response.json() as FundingRatesResponse;
+
+    expect(response.status).toBe(200);
+    expect(payload.market).toBe("bybit");
+    expect(payload.fetchedAt).toBe(654);
+    expect(payload.rows[0]?.symbol).toBe("WALUSDT");
+  });
+
   test("returns asset detail response", async () => {
     const getAssetDetails = vi.fn().mockResolvedValue([
       {
@@ -85,7 +105,7 @@ describe("api app", () => {
       now: () => 0
     });
 
-    const response = await app.request("/markets/bybit/funding-rates");
+    const response = await app.request("/markets/kraken/funding-rates");
 
     expect(response.status).toBe(400);
   });

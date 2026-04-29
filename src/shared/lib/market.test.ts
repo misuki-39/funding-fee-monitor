@@ -54,6 +54,7 @@ describe("shared market helpers", () => {
   test("extractBaseSymbol supports documented exchange formats", () => {
     expect(extractBaseSymbol("binance", "WALUSDT")).toBe("WAL");
     expect(extractBaseSymbol("bitget", "WALUSDT")).toBe("WAL");
+    expect(extractBaseSymbol("bybit", "WALUSDT")).toBe("WAL");
     expect(extractBaseSymbol("okx", "WAL-USDT-SWAP")).toBe("WAL");
     expect(extractBaseSymbol("gate", "WAL_USDT")).toBe("WAL");
     expect(extractBaseSymbol("gate", "龙虾_USDT")).toBe("龙虾");
@@ -62,6 +63,7 @@ describe("shared market helpers", () => {
   test("buildAssetSymbol rebuilds detail symbols for all exchanges", () => {
     expect(buildAssetSymbol("binance", "wal")).toBe("walUSDT");
     expect(buildAssetSymbol("bitget", "wal")).toBe("walUSDT");
+    expect(buildAssetSymbol("bybit", "wal")).toBe("walUSDT");
     expect(buildAssetSymbol("okx", "wal")).toBe("wal-USDT-SWAP");
     expect(buildAssetSymbol("gate", "wal")).toBe("wal_USDT");
     expect(buildAssetSymbol("gate", "龙虾")).toBe("龙虾_USDT");
@@ -69,5 +71,6 @@ describe("shared market helpers", () => {
 
   test("extractBaseSymbol rejects unsupported exchange formats", () => {
     expect(() => extractBaseSymbol("okx", "WALUSDT")).toThrow(/Unsupported OKX symbol/);
+    expect(() => extractBaseSymbol("bybit", "WAL-USDT-SWAP")).toThrow(/Unsupported Bybit symbol/);
   });
 });

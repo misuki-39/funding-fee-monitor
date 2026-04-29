@@ -2,16 +2,18 @@ import { buildAssetSymbol } from "../../src/shared/lib/assets.js";
 import type { AssetDetailMarketData, AssetDetailRow, MarketKey } from "../../src/shared/types/market.js";
 import { fetchBinanceAssetDetail } from "./binance.js";
 import { fetchBitgetAssetDetail } from "./bitget.js";
+import { fetchBybitAssetDetail } from "./bybit.js";
 import { fetchGateAssetDetail } from "./gate.js";
 import { fetchOkxAssetDetail } from "./okx.js";
 
-const detailMarketOrder: MarketKey[] = ["okx", "binance", "gate", "bitget"];
+const detailMarketOrder: MarketKey[] = ["okx", "binance", "gate", "bitget", "bybit"];
 
 const assetDetailFetchers: Record<MarketKey, (symbol: string) => Promise<AssetDetailMarketData>> = {
   okx: fetchOkxAssetDetail,
   binance: fetchBinanceAssetDetail,
   gate: fetchGateAssetDetail,
-  bitget: fetchBitgetAssetDetail
+  bitget: fetchBitgetAssetDetail,
+  bybit: fetchBybitAssetDetail
 };
 
 export function createAssetDetailRow(

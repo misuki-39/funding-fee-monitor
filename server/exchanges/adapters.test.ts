@@ -1,6 +1,13 @@
 import { describe, expect, test } from "vitest";
 import { mergeBinanceRows, normalizeBinanceAssetDetail, normalizeBinanceHistoryPoint } from "./binance.js";
 import { normalizeBitgetAssetDetail, normalizeBitgetCandle, normalizeBitgetFundingHistoryPoint, normalizeBitgetRow } from "./bitget.js";
+import {
+  createBybitIntervalMap,
+  normalizeBybitAssetDetail,
+  normalizeBybitCandle,
+  normalizeBybitFundingHistoryPoint,
+  normalizeBybitRow
+} from "./bybit.js";
 import { normalizeGateAssetDetail, normalizeGateFundingHistoryPoint } from "./gate.js";
 import { normalizeOkxAssetDetail, normalizeOkxFundingHistoryPoint } from "./okx.js";
 
@@ -153,6 +160,71 @@ describe("exchange adapters", () => {
       "1.24",
       "10",
       "12.3"
+    ])).toEqual({
+      timeMs: 1775059200000,
+      price: 1.2345
+    });
+  });
+
+  test("createBybitIntervalMap converts funding interval minutes into hours", () => {
+    const intervalMap = createBybitIntervalMap([
+      { symbol: "WALUSDT", fundingInterval: 480 },
+      { symbol: "FOOUSDT", fundingInterval: 240 },
+      { symbol: "NOFUNDINGUSDT", fundingInterval: 0 },
+      { symbol: null, fundingInterval: 480 }
+    ]);
+
+    expect(intervalMap.get("WALUSDT")).toBe(8);
+    expect(intervalMap.get("FOOUSDT")).toBe(4);
+    expect(intervalMap.has("NOFUNDINGUSDT")).toBe(false);
+  });
+
+  test("normalizeBybitRow reads ticker funding rate rows", () => {
+    expect(normalizeBybitRow({
+      symbol: "WALUSDT",
+      fundingRate: "0.0007",
+      nextFundingTime: "1775059200000",
+      markPrice: "0.5234"
+    }, 8)).toEqual({
+      symbol: "WALUSDT",
+      fundingRate: 0.0007,
+      cycleLabel: "8h",
+      settlementTimeMs: 1775059200000
+    });
+  });
+
+  test("normalizeBybitAssetDetail reads ticker funding rate and mark price", () => {
+    expect(normalizeBybitAssetDetail({
+      symbol: "WALUSDT",
+      fundingRate: "-0.0008",
+      nextFundingTime: "1775059200000",
+      markPrice: "1.2345"
+    }, 4)).toEqual({
+      symbol: "WALUSDT",
+      fundingRate: -0.0008,
+      markPrice: 1.2345,
+      cycleLabel: "4h"
+    });
+  });
+
+  test("normalizeBybitFundingHistoryPoint reads funding history rows", () => {
+    expect(normalizeBybitFundingHistoryPoint({
+      symbol: "WALUSDT",
+      fundingRate: "0.0009",
+      fundingRateTimestamp: "1775059200000"
+    })).toEqual({
+      fundingTimeMs: 1775059200000,
+      fundingRate: 0.0009
+    });
+  });
+
+  test("normalizeBybitCandle reads mark candle rows", () => {
+    expect(normalizeBybitCandle([
+      "1775059200000",
+      "1.2345",
+      "1.26",
+      "1.22",
+      "1.25"
     ])).toEqual({
       timeMs: 1775059200000,
       price: 1.2345
