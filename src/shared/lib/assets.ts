@@ -1,3 +1,4 @@
+import { toCanonicalBase, toExchangeBase } from "../config/assetAliases.js";
 import type { MarketKey } from "../types/market.js";
 
 const binanceQuoteSuffixes = ["USDT", "USDC", "FDUSD", "BUSD", "TUSD"] as const;
@@ -7,6 +8,11 @@ export function extractBaseSymbol(market: MarketKey, symbol: string): string {
     throw new Error(`Invalid ${market} symbol: ${symbol}`);
   }
 
+  const rawBase = extractRawBase(market, symbol);
+  return toCanonicalBase(market, rawBase);
+}
+
+function extractRawBase(market: MarketKey, symbol: string): string {
   if (market === "binance" || market === "bitget" || market === "bybit") {
     for (const quoteSuffix of binanceQuoteSuffixes) {
       if (symbol.endsWith(quoteSuffix)) {
@@ -36,13 +42,15 @@ export function extractBaseSymbol(market: MarketKey, symbol: string): string {
 }
 
 export function buildAssetSymbol(market: MarketKey, base: string): string {
+  const exchangeBase = toExchangeBase(market, base);
+
   if (market === "binance" || market === "bitget" || market === "bybit") {
-    return `${base}USDT`;
+    return `${exchangeBase}USDT`;
   }
 
   if (market === "okx") {
-    return `${base}-USDT-SWAP`;
+    return `${exchangeBase}-USDT-SWAP`;
   }
 
-  return `${base}_USDT`;
+  return `${exchangeBase}_USDT`;
 }

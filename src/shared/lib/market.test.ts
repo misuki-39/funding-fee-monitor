@@ -60,6 +60,12 @@ describe("shared market helpers", () => {
     expect(extractBaseSymbol("gate", "龙虾_USDT")).toBe("龙虾");
   });
 
+  test("extractBaseSymbol normalizes OKX-only aliases to the canonical base", () => {
+    expect(extractBaseSymbol("okx", "AI-USDT-SWAP")).toBe("AIGENSYN");
+    expect(extractBaseSymbol("binance", "AIGENSYNUSDT")).toBe("AIGENSYN");
+    expect(extractBaseSymbol("gate", "AIGENSYN_USDT")).toBe("AIGENSYN");
+  });
+
   test("buildAssetSymbol rebuilds detail symbols for all exchanges", () => {
     expect(buildAssetSymbol("binance", "wal")).toBe("walUSDT");
     expect(buildAssetSymbol("bitget", "wal")).toBe("walUSDT");
@@ -67,6 +73,12 @@ describe("shared market helpers", () => {
     expect(buildAssetSymbol("okx", "wal")).toBe("wal-USDT-SWAP");
     expect(buildAssetSymbol("gate", "wal")).toBe("wal_USDT");
     expect(buildAssetSymbol("gate", "龙虾")).toBe("龙虾_USDT");
+  });
+
+  test("buildAssetSymbol resolves canonical base back to exchange-specific aliases", () => {
+    expect(buildAssetSymbol("okx", "AIGENSYN")).toBe("AI-USDT-SWAP");
+    expect(buildAssetSymbol("binance", "AIGENSYN")).toBe("AIGENSYNUSDT");
+    expect(buildAssetSymbol("gate", "AIGENSYN")).toBe("AIGENSYN_USDT");
   });
 
   test("extractBaseSymbol rejects unsupported exchange formats", () => {
