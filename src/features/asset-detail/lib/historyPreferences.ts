@@ -112,6 +112,26 @@ export function getInitialHistoryMarkets(base: string): MarketKey[] {
   return preferences.perBaseMarkets[normalizeBase(base)] ?? preferences.globalDefaultMarkets;
 }
 
+export function pickInitialHistoryMarkets(base: string, availableMarkets: MarketKey[]): MarketKey[] {
+  if (availableMarkets.length === 0) {
+    return [];
+  }
+
+  const availableSet = new Set(availableMarkets);
+  const persisted = getInitialHistoryMarkets(base);
+  const intersection = persisted.filter((market) => availableSet.has(market));
+
+  if (intersection.length > 0) {
+    return intersection;
+  }
+
+  if (availableMarkets.length === 1) {
+    return [availableMarkets[0]];
+  }
+
+  return [...availableMarkets].sort().slice(0, 2);
+}
+
 export function persistBaseHistoryMarkets(base: string, markets: MarketKey[]): void {
   const preferences = readHistoryPreferences();
   const normalizedBase = normalizeBase(base);

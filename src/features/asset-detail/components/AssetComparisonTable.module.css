@@ -41,8 +41,7 @@
   text-align: center;
 }
 
-.row:last-child .cell,
-.unavailableRow:last-child .cell {
+.row:last-child .cell {
   border-bottom: 0;
 }
 
@@ -55,10 +54,6 @@
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 600;
-}
-
-.unavailableRow .cell {
-  color: var(--muted);
 }
 
 @media (max-width: 760px) {

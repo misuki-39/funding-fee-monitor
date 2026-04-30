@@ -25,10 +25,10 @@ import {
 } from "../lib/historyCharts.js";
 import {
   getGlobalDefaultHistoryMarkets,
-  getInitialHistoryMarkets,
   HISTORY_MARKET_ORDER,
   persistBaseHistoryMarkets,
   persistGlobalDefaultHistoryMarkets,
+  pickInitialHistoryMarkets,
   sameHistoryMarkets,
   sortHistoryMarkets
 } from "../lib/historyPreferences.js";
@@ -51,6 +51,7 @@ function getPairColor(index: number): string {
 
 interface AssetHistorySectionProps {
   base: string;
+  availableMarkets: MarketKey[];
 }
 
 interface TooltipPayloadItem {
@@ -151,20 +152,31 @@ function getMarketStatusLabel(query: HistoryQuery | undefined): string {
   return "Not loaded";
 }
 
-export function AssetHistorySection({ base }: AssetHistorySectionProps) {
+export function AssetHistorySection({ base, availableMarkets }: AssetHistorySectionProps) {
+  const availableKey = [...availableMarkets].sort().join(",");
+
   const [draftDays, setDraftDays] = useState("7");
   const [days, setDays] = useState(7);
   const [fetchedDays, setFetchedDays] = useState(7);
-  const [selectedMarkets, setSelectedMarkets] = useState<MarketKey[]>(() => getInitialHistoryMarkets(base));
+  const [selectedMarkets, setSelectedMarkets] = useState<MarketKey[]>(() => pickInitialHistoryMarkets(base, availableMarkets));
   const [globalDefaultMarkets, setGlobalDefaultMarkets] = useState<MarketKey[]>(() => getGlobalDefaultHistoryMarkets());
   const [selectedPairKeys, setSelectedPairKeys] = useState<Set<string>>(new Set());
   const [prevBase, setPrevBase] = useState(base);
+  const [prevAvailableKey, setPrevAvailableKey] = useState(availableKey);
 
   if (prevBase !== base) {
     setPrevBase(base);
-    setSelectedMarkets(getInitialHistoryMarkets(base));
+    setPrevAvailableKey(availableKey);
+    setSelectedMarkets(pickInitialHistoryMarkets(base, availableMarkets));
     setSelectedPairKeys(new Set());
+  } else if (prevAvailableKey !== availableKey) {
+    setPrevAvailableKey(availableKey);
+    const availableSet = new Set(availableMarkets);
+    const pruned = selectedMarkets.filter((market) => availableSet.has(market));
+    setSelectedMarkets(pruned.length > 0 ? pruned : pickInitialHistoryMarkets(base, availableMarkets));
   }
+
+  const visibleMarkets = HISTORY_MARKET_ORDER.filter((market) => availableMarkets.includes(market));
 
   const queries = useAssetHistoryQueries(base, fetchedDays, selectedMarkets);
 
@@ -292,7 +304,7 @@ export function AssetHistorySection({ base }: AssetHistorySectionProps) {
             </Button>
           </div>
           <div className={styles.marketList}>
-            {HISTORY_MARKET_ORDER.map((market) => (
+            {visibleMarkets.map((market) => (
               <label key={market} className={styles.marketOption}>
                 <input
                   type="checkbox"

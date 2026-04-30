@@ -199,7 +199,7 @@ describe("AssetDetailPage", () => {
     expect(screen.getByRole("heading", { name: "Funding History and Pairwise Cumulative Spread" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Apply" })).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: /Binance Ready/i })).toBeChecked();
-    expect(screen.getByRole("checkbox", { name: /OKX Ready/i })).toBeChecked();
+    expect(screen.queryByRole("checkbox", { name: /OKX/i })).not.toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: /Gate\.io Not loaded/i })).not.toBeChecked();
     expect(screen.getByRole("heading", { name: "Funding + Price History" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Pairwise Cumulative Spread" })).toBeInTheDocument();

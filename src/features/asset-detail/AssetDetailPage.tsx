@@ -13,6 +13,7 @@ export function AssetDetailPage() {
   const params = useParams();
   const base = params.base ?? "";
   const query = useAssetDetailQuery(base);
+  const availableMarkets = query.data?.rows.filter((row) => row.available).map((row) => row.market) ?? null;
 
   useEffect(() => {
     document.title = base ? `${base} Funding Comparison` : "Asset Funding Comparison";
@@ -65,7 +66,9 @@ export function AssetDetailPage() {
         <AssetComparisonTable rows={query.data?.rows ?? []} />
       </section>
 
-      {base ? <AssetHistorySection base={base} /> : null}
+      {base && availableMarkets && availableMarkets.length > 0 ? (
+        <AssetHistorySection base={base} availableMarkets={availableMarkets} />
+      ) : null}
     </main>
   );
 }
