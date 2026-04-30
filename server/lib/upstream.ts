@@ -4,6 +4,12 @@ import { connect as tlsConnect } from "node:tls";
 
 const upstreamTimeoutMs = 8000;
 
+interface RequestOptions {
+  method: "GET" | "POST";
+  body?: string;
+  contentType?: string;
+}
+
 function readProxyEnv() {
   return process.env.HTTPS_PROXY
     ?? process.env.https_proxy
@@ -23,8 +29,16 @@ function buildProxyAuthorizationHeader(proxyUrl: URL) {
   return `Basic ${Buffer.from(credentials).toString("base64")}`;
 }
 
-async function requestTextDirect(url: URL) {
+async function requestTextDirect(url: URL, options: RequestOptions) {
+  const headers: Record<string, string> = {};
+  if (options.body !== undefined) {
+    headers["Content-Type"] = options.contentType ?? "application/json";
+  }
+
   const response = await fetch(url, {
+    method: options.method,
+    body: options.body,
+    headers,
     signal: AbortSignal.timeout(upstreamTimeoutMs)
   });
 
@@ -35,7 +49,7 @@ async function requestTextDirect(url: URL) {
   };
 }
 
-function requestTextViaHttpProxy(url: URL, proxyUrl: URL) {
+function requestTextViaHttpProxy(url: URL, proxyUrl: URL, options: RequestOptions) {
   if (url.protocol !== "https:") {
     throw new Error(`Unsupported upstream protocol: ${url.protocol}`);
   }
@@ -84,14 +98,20 @@ function requestTextViaHttpProxy(url: URL, proxyUrl: URL) {
         tlsSocket.destroy(new Error(`Upstream request timed out after ${upstreamTimeoutMs}ms`));
       });
 
+      const upstreamHeaders: Record<string, string> = {
+        Host: url.host
+      };
+      if (options.body !== undefined) {
+        upstreamHeaders["Content-Type"] = options.contentType ?? "application/json";
+        upstreamHeaders["Content-Length"] = String(Buffer.byteLength(options.body));
+      }
+
       const upstreamRequest = httpsRequest({
         host: url.hostname,
         port: upstreamPort,
         path: `${url.pathname}${url.search}`,
-        method: "GET",
-        headers: {
-          Host: url.host
-        },
+        method: options.method,
+        headers: upstreamHeaders,
         createConnection: () => tlsSocket
       }, (upstreamResponse) => {
         const chunks: string[] = [];
@@ -114,6 +134,10 @@ function requestTextViaHttpProxy(url: URL, proxyUrl: URL) {
       });
 
       upstreamRequest.on("error", reject);
+
+      if (options.body !== undefined) {
+        upstreamRequest.write(options.body);
+      }
       upstreamRequest.end();
     });
 
@@ -122,19 +146,17 @@ function requestTextViaHttpProxy(url: URL, proxyUrl: URL) {
   });
 }
 
-async function requestText(url: URL) {
+async function requestText(url: URL, options: RequestOptions) {
   const proxyValue = readProxyEnv();
 
   if (!proxyValue) {
-    return requestTextDirect(url);
+    return requestTextDirect(url, options);
   }
 
-  return requestTextViaHttpProxy(url, new URL(proxyValue));
+  return requestTextViaHttpProxy(url, new URL(proxyValue), options);
 }
 
-export async function fetchUpstreamJson<T>(url: string, errorLabel: string): Promise<T> {
-  const upstream = await requestText(new URL(url));
-
+function parseJsonResponse<T>(upstream: { statusCode: number; body: string }, errorLabel: string): T {
   if (upstream.statusCode < 200 || upstream.statusCode >= 300) {
     throw new Error(`HTTP ${upstream.statusCode} from ${errorLabel}`);
   }
@@ -146,4 +168,18 @@ export async function fetchUpstreamJson<T>(url: string, errorLabel: string): Pro
       `Invalid JSON from ${errorLabel}: ${error instanceof Error ? error.message : String(error)}`
     );
   }
+}
+
+export async function fetchUpstreamJson<T>(url: string, errorLabel: string): Promise<T> {
+  const upstream = await requestText(new URL(url), { method: "GET" });
+  return parseJsonResponse<T>(upstream, errorLabel);
+}
+
+export async function postUpstreamJson<T>(url: string, body: unknown, errorLabel: string): Promise<T> {
+  const upstream = await requestText(new URL(url), {
+    method: "POST",
+    body: JSON.stringify(body),
+    contentType: "application/json"
+  });
+  return parseJsonResponse<T>(upstream, errorLabel);
 }

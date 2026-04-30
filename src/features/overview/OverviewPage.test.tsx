@@ -30,5 +30,6 @@ describe("OverviewPage", () => {
     expect(screen.getByRole("link", { name: "WAL-USDT-SWAP" })).toHaveAttribute("href", "/assets/WAL");
     expect(screen.getByRole("button", { name: "Bitget" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Bybit" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "GRVT" })).toBeInTheDocument();
   });
 });

@@ -2,9 +2,9 @@ import type { MarketConfig, MarketKey } from "../types/market.js";
 
 export const PAGE_SIZE = 10;
 export const ASSET_DETAIL_SOURCE_LABEL =
-  "Binance premiumIndex + fundingInfo | OKX funding-rate + mark-price | Gate contract detail | Bitget current-fund-rate + symbol-price | Bybit tickers + instruments-info";
+  "Binance premiumIndex + fundingInfo | OKX funding-rate + mark-price | Gate contract detail | Bitget current-fund-rate + symbol-price | Bybit tickers + instruments-info | GRVT ticker + instrument";
 export const ASSET_HISTORY_SOURCE_LABEL =
-  "Binance fundingRate | OKX funding-rate-history + history-mark-price-candles | Gate funding_rate + candlesticks | Bitget history-fund-rate + candles(MARK) | Bybit funding/history + mark-price-kline";
+  "Binance fundingRate | OKX funding-rate-history + history-mark-price-candles | Gate funding_rate + candlesticks | Bitget history-fund-rate + candles(MARK) | Bybit funding/history + mark-price-kline | GRVT funding + kline(MARK)";
 
 export const MARKETS: Record<MarketKey, MarketConfig> = {
   okx: {
@@ -36,9 +36,15 @@ export const MARKETS: Record<MarketKey, MarketConfig> = {
     label: "Bybit",
     title: "Bybit Funding Rate",
     sourceUrl: "https://api.bybit.com/v5/market/tickers?category=linear"
+  },
+  grvt: {
+    key: "grvt",
+    label: "GRVT",
+    title: "GRVT Funding Rate",
+    sourceUrl: "https://market-data.grvt.io/full/v1/all_instruments + /full/v1/ticker"
   }
 };
 
 export function isMarketKey(value: string): value is MarketKey {
-  return value === "okx" || value === "binance" || value === "gate" || value === "bitget" || value === "bybit";
+  return value === "okx" || value === "binance" || value === "gate" || value === "bitget" || value === "bybit" || value === "grvt";
 }

@@ -94,6 +94,19 @@ const historyRowsByMarket = {
     ],
     available: true,
     errorMessage: null
+  },
+  grvt: {
+    market: "grvt",
+    base: "龙虾",
+    symbol: "龙虾_USDT_Perp",
+    points: [
+      { fundingTimeMs: 6_000, fundingRate: -0.00004 }
+    ],
+    pricePoints: [
+      { timeMs: 6_000, price: 1.28 }
+    ],
+    available: true,
+    errorMessage: null
   }
 } as const;
 

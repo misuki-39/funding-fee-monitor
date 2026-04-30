@@ -8,6 +8,13 @@ import {
   normalizeBybitFundingHistoryPoint,
   normalizeBybitRow
 } from "./bybit.js";
+import {
+  createGrvtIntervalMap,
+  normalizeGrvtAssetDetail,
+  normalizeGrvtCandle,
+  normalizeGrvtFundingHistoryPoint,
+  normalizeGrvtRow
+} from "./grvt.js";
 import { normalizeGateAssetDetail, normalizeGateFundingHistoryPoint } from "./gate.js";
 import { normalizeOkxAssetDetail, normalizeOkxFundingHistoryPoint } from "./okx.js";
 
@@ -228,6 +235,68 @@ describe("exchange adapters", () => {
     ])).toEqual({
       timeMs: 1775059200000,
       price: 1.2345
+    });
+  });
+
+  test("createGrvtIntervalMap reads funding interval hours per instrument", () => {
+    const intervalMap = createGrvtIntervalMap([
+      { instrument: "BTC_USDT_Perp", base: "BTC", quote: "USDT", kind: "PERPETUAL", funding_interval_hours: 8 },
+      { instrument: "AI16Z_USDT_Perp", base: "AI16Z", quote: "USDT", kind: "PERPETUAL", funding_interval_hours: 4 },
+      { instrument: "BAD_USDT_Perp", base: "BAD", quote: "USDT", kind: "PERPETUAL", funding_interval_hours: 0 }
+    ]);
+
+    expect(intervalMap.get("BTC_USDT_Perp")).toBe(8);
+    expect(intervalMap.get("AI16Z_USDT_Perp")).toBe(4);
+    expect(intervalMap.has("BAD_USDT_Perp")).toBe(false);
+  });
+
+  test("normalizeGrvtRow converts percentage-point funding rate and ns timestamp", () => {
+    const row = normalizeGrvtRow({
+      instrument: "BTC_USDT_Perp",
+      mark_price: "76091.785647992",
+      funding_rate: "-0.0036",
+      next_funding_time: "1777564800000000000"
+    }, 8);
+
+    expect(row.symbol).toBe("BTC_USDT_Perp");
+    expect(row.cycleLabel).toBe("8h");
+    expect(row.settlementTimeMs).toBe(1777564800000);
+    expect(row.fundingRate).toBeCloseTo(-0.000036, 12);
+  });
+
+  test("normalizeGrvtAssetDetail merges ticker funding and mark price", () => {
+    const detail = normalizeGrvtAssetDetail({
+      instrument: "ASTER_USDT_Perp",
+      mark_price: "0.656794397",
+      funding_rate: "0.005",
+      next_funding_time: "1777550400000000000"
+    }, 4);
+
+    expect(detail.symbol).toBe("ASTER_USDT_Perp");
+    expect(detail.cycleLabel).toBe("4h");
+    expect(detail.markPrice).toBe(0.656794397);
+    expect(detail.fundingRate).toBeCloseTo(0.00005, 12);
+  });
+
+  test("normalizeGrvtFundingHistoryPoint reads ns timestamp and percentage-point rate", () => {
+    const point = normalizeGrvtFundingHistoryPoint({
+      instrument: "BTC_USDT_Perp",
+      funding_rate: "-0.0102",
+      funding_time: "1777536000000000000",
+      funding_interval_hours: 8
+    });
+
+    expect(point.fundingTimeMs).toBe(1777536000000);
+    expect(point.fundingRate).toBeCloseTo(-0.000102, 12);
+  });
+
+  test("normalizeGrvtCandle reads mark kline open price", () => {
+    expect(normalizeGrvtCandle({
+      open_time: "1777538700000000000",
+      open: "76092.036615747"
+    })).toEqual({
+      timeMs: 1777538700000,
+      price: 76092.036615747
     });
   });
 });

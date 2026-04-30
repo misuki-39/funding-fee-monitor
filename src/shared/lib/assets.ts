@@ -2,6 +2,7 @@ import { toCanonicalBase, toExchangeBase } from "../config/assetAliases.js";
 import type { MarketKey } from "../types/market.js";
 
 const binanceQuoteSuffixes = ["USDT", "USDC", "FDUSD", "BUSD", "TUSD"] as const;
+const grvtSuffix = "_USDT_Perp";
 
 export function extractBaseSymbol(market: MarketKey, symbol: string): string {
   if (!symbol) {
@@ -33,6 +34,13 @@ function extractRawBase(market: MarketKey, symbol: string): string {
     return base ?? "";
   }
 
+  if (market === "grvt") {
+    if (!symbol.endsWith(grvtSuffix)) {
+      throw new Error(`Unsupported GRVT symbol: ${symbol}`);
+    }
+    return symbol.slice(0, -grvtSuffix.length);
+  }
+
   if (!symbol.includes("_")) {
     throw new Error(`Unsupported Gate.io symbol: ${symbol}`);
   }
@@ -50,6 +58,10 @@ export function buildAssetSymbol(market: MarketKey, base: string): string {
 
   if (market === "okx") {
     return `${exchangeBase}-USDT-SWAP`;
+  }
+
+  if (market === "grvt") {
+    return `${exchangeBase}${grvtSuffix}`;
   }
 
   return `${exchangeBase}_USDT`;

@@ -1,4 +1,4 @@
-export type MarketKey = "okx" | "binance" | "gate" | "bitget" | "bybit";
+export type MarketKey = "okx" | "binance" | "gate" | "bitget" | "bybit" | "grvt";
 export type SortDirection = "asc" | "desc";
 export type CycleLabel = "1h" | "2h" | "4h" | "8h";
 export type SettlementFilter = "1h" | "4h" | "all";

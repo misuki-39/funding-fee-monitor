@@ -58,6 +58,8 @@ describe("shared market helpers", () => {
     expect(extractBaseSymbol("okx", "WAL-USDT-SWAP")).toBe("WAL");
     expect(extractBaseSymbol("gate", "WAL_USDT")).toBe("WAL");
     expect(extractBaseSymbol("gate", "龙虾_USDT")).toBe("龙虾");
+    expect(extractBaseSymbol("grvt", "BTC_USDT_Perp")).toBe("BTC");
+    expect(extractBaseSymbol("grvt", "AI16Z_USDT_Perp")).toBe("AI16Z");
   });
 
   test("extractBaseSymbol normalizes OKX-only aliases to the canonical base", () => {
@@ -73,6 +75,7 @@ describe("shared market helpers", () => {
     expect(buildAssetSymbol("okx", "wal")).toBe("wal-USDT-SWAP");
     expect(buildAssetSymbol("gate", "wal")).toBe("wal_USDT");
     expect(buildAssetSymbol("gate", "龙虾")).toBe("龙虾_USDT");
+    expect(buildAssetSymbol("grvt", "BTC")).toBe("BTC_USDT_Perp");
   });
 
   test("buildAssetSymbol resolves canonical base back to exchange-specific aliases", () => {
@@ -84,5 +87,6 @@ describe("shared market helpers", () => {
   test("extractBaseSymbol rejects unsupported exchange formats", () => {
     expect(() => extractBaseSymbol("okx", "WALUSDT")).toThrow(/Unsupported OKX symbol/);
     expect(() => extractBaseSymbol("bybit", "WAL-USDT-SWAP")).toThrow(/Unsupported Bybit symbol/);
+    expect(() => extractBaseSymbol("grvt", "BTCUSDT")).toThrow(/Unsupported GRVT symbol/);
   });
 });

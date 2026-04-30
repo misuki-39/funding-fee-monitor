@@ -67,6 +67,26 @@ describe("api app", () => {
     expect(payload.rows[0]?.symbol).toBe("WALUSDT");
   });
 
+  test("returns funding rates response for grvt", async () => {
+    const getFundingRates = vi.fn().mockResolvedValue([
+      { symbol: "BTC_USDT_Perp", fundingRate: -0.000036, cycleLabel: "8h", settlementTimeMs: 1_777_564_800_000 }
+    ]);
+    const app = createApiApp({
+      getFundingRates,
+      getAssetDetails: vi.fn(),
+      getAssetHistoryByMarket: vi.fn(),
+      now: () => 789
+    });
+
+    const response = await app.request("/markets/grvt/funding-rates");
+    const payload = await response.json() as FundingRatesResponse;
+
+    expect(response.status).toBe(200);
+    expect(payload.market).toBe("grvt");
+    expect(payload.fetchedAt).toBe(789);
+    expect(payload.rows[0]?.symbol).toBe("BTC_USDT_Perp");
+  });
+
   test("returns asset detail response", async () => {
     const getAssetDetails = vi.fn().mockResolvedValue([
       {
