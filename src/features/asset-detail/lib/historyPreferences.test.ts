@@ -1,9 +1,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import {
-  getGlobalDefaultHistoryMarkets,
   getInitialHistoryMarkets,
   persistBaseHistoryMarkets,
-  persistGlobalDefaultHistoryMarkets,
   pickInitialHistoryMarkets,
   readHistoryPreferences
 } from "./historyPreferences.js";
@@ -16,7 +14,6 @@ describe("historyPreferences", () => {
   });
 
   test("falls back to binance and okx for new assets", () => {
-    expect(getGlobalDefaultHistoryMarkets()).toEqual(["binance", "okx"]);
     expect(getInitialHistoryMarkets("wal")).toEqual(["binance", "okx"]);
   });
 
@@ -30,16 +27,6 @@ describe("historyPreferences", () => {
     persistBaseHistoryMarkets("wal", ["binance", "okx"]);
 
     expect(readHistoryPreferences().perBaseMarkets).toEqual({});
-  });
-
-  test("updates the global default and removes redundant overrides", () => {
-    persistBaseHistoryMarkets("wal", ["binance", "gate"]);
-    const next = persistGlobalDefaultHistoryMarkets(["binance", "gate"]);
-
-    expect(next).toEqual(["binance", "gate"]);
-    expect(getGlobalDefaultHistoryMarkets()).toEqual(["binance", "gate"]);
-    expect(readHistoryPreferences().perBaseMarkets).toEqual({});
-    expect(getInitialHistoryMarkets("new")).toEqual(["binance", "gate"]);
   });
 
   describe("pickInitialHistoryMarkets", () => {

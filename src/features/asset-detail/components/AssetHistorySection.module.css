@@ -30,14 +30,6 @@
   gap: 10px;
 }
 
-.controlHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
 .controlLabel {
   color: var(--muted);
   font-size: 0.8rem;
@@ -83,10 +75,34 @@
   color: var(--text);
 }
 
-.marketHint {
-  color: var(--muted);
-  font-size: 0.8rem;
-  font-weight: 700;
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.status_idle {
+  background: rgba(54, 41, 22, 0.25);
+}
+
+.status_loading {
+  background: #f59e0b;
+  animation: statusPulse 1.2s ease-in-out infinite;
+}
+
+.status_ready {
+  background: #10b981;
+}
+
+.status_failed {
+  background: #ef4444;
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
 .helperText {

@@ -35,7 +35,7 @@ export function sortHistoryMarkets(markets: MarketKey[]): MarketKey[] {
   return HISTORY_MARKET_ORDER.filter((market) => selected.has(market));
 }
 
-export function sameHistoryMarkets(left: MarketKey[], right: MarketKey[]): boolean {
+function sameHistoryMarkets(left: MarketKey[], right: MarketKey[]): boolean {
   return left.length === right.length && left.every((market, index) => market === right[index]);
 }
 
@@ -103,10 +103,6 @@ function writeHistoryPreferences(preferences: HistoryPreferences) {
   storage.setItem(HISTORY_PREFERENCES_STORAGE_KEY, JSON.stringify(preferences));
 }
 
-export function getGlobalDefaultHistoryMarkets(): MarketKey[] {
-  return readHistoryPreferences().globalDefaultMarkets;
-}
-
 export function getInitialHistoryMarkets(base: string): MarketKey[] {
   const preferences = readHistoryPreferences();
   return preferences.perBaseMarkets[normalizeBase(base)] ?? preferences.globalDefaultMarkets;
@@ -144,15 +140,3 @@ export function persistBaseHistoryMarkets(base: string, markets: MarketKey[]): v
   });
 }
 
-export function persistGlobalDefaultHistoryMarkets(markets: MarketKey[]): MarketKey[] {
-  const preferences = readHistoryPreferences();
-  const sanitized = sortHistoryMarkets(markets);
-  const safeGlobalDefaultMarkets = sanitized.length > 0 ? sanitized : [...DEFAULT_GLOBAL_HISTORY_MARKETS];
-
-  writeHistoryPreferences({
-    globalDefaultMarkets: safeGlobalDefaultMarkets,
-    perBaseMarkets: cleanupPerBaseMarkets(preferences.perBaseMarkets, safeGlobalDefaultMarkets)
-  });
-
-  return safeGlobalDefaultMarkets;
-}

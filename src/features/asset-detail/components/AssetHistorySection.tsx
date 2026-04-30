@@ -24,12 +24,9 @@ import {
   type PairwiseComparisonLine
 } from "../lib/historyCharts.js";
 import {
-  getGlobalDefaultHistoryMarkets,
   HISTORY_MARKET_ORDER,
   persistBaseHistoryMarkets,
-  persistGlobalDefaultHistoryMarkets,
   pickInitialHistoryMarkets,
-  sameHistoryMarkets,
   sortHistoryMarkets
 } from "../lib/historyPreferences.js";
 import styles from "./AssetHistorySection.module.css";
@@ -143,13 +140,28 @@ function trimRows(rows: AssetFundingHistoryRow[], days: number, fetchedDays: num
 }
 
 type HistoryQuery = UseQueryResult<AssetFundingHistoryMarketResponse, Error>;
+type MarketStatus = "idle" | "loading" | "ready" | "failed";
 
-function getMarketStatusLabel(query: HistoryQuery | undefined): string {
-  if (!query) return "Not loaded";
-  if (query.isFetching) return "Loading...";
-  if (query.isError) return "Failed";
-  if (query.data) return "Ready";
-  return "Not loaded";
+const marketStatusLabel: Record<MarketStatus, string> = {
+  idle: "Not loaded",
+  loading: "Loading",
+  ready: "Ready",
+  failed: "Failed"
+};
+
+const marketStatusClass: Record<MarketStatus, string> = {
+  idle: styles.status_idle,
+  loading: styles.status_loading,
+  ready: styles.status_ready,
+  failed: styles.status_failed
+};
+
+function getMarketStatus(query: HistoryQuery | undefined): MarketStatus {
+  if (!query) return "idle";
+  if (query.isFetching) return "loading";
+  if (query.isError) return "failed";
+  if (query.data) return "ready";
+  return "idle";
 }
 
 export function AssetHistorySection({ base, availableMarkets }: AssetHistorySectionProps) {
@@ -159,7 +171,6 @@ export function AssetHistorySection({ base, availableMarkets }: AssetHistorySect
   const [days, setDays] = useState(7);
   const [fetchedDays, setFetchedDays] = useState(7);
   const [selectedMarkets, setSelectedMarkets] = useState<MarketKey[]>(() => pickInitialHistoryMarkets(base, availableMarkets));
-  const [globalDefaultMarkets, setGlobalDefaultMarkets] = useState<MarketKey[]>(() => getGlobalDefaultHistoryMarkets());
   const [selectedPairKeys, setSelectedPairKeys] = useState<Set<string>>(new Set());
   const [prevBase, setPrevBase] = useState(base);
   const [prevAvailableKey, setPrevAvailableKey] = useState(availableKey);
@@ -203,7 +214,6 @@ export function AssetHistorySection({ base, availableMarkets }: AssetHistorySect
 
   const parsedDraftDays = Number(draftDays);
   const isValidDraftDays = Number.isInteger(parsedDraftDays) && parsedDraftDays >= 1 && parsedDraftDays <= 14;
-  const isCurrentSelectionGlobalDefault = sameHistoryMarkets(selectedMarkets, globalDefaultMarkets);
   const fundingChartData = useMemo(
     () => buildFundingHistoryChartData(trimmedRows, selectedMarkets),
     [selectedMarkets, trimmedRows]
@@ -293,28 +303,27 @@ export function AssetHistorySection({ base, availableMarkets }: AssetHistorySect
         </label>
 
         <div className={styles.marketControls}>
-          <div className={styles.controlHeader}>
-            <span className={styles.controlLabel}>Exchanges</span>
-            <Button
-              variant="secondary"
-              disabled={selectedMarkets.length === 0 || isCurrentSelectionGlobalDefault}
-              onClick={() => setGlobalDefaultMarkets(persistGlobalDefaultHistoryMarkets(selectedMarkets))}
-            >
-              {isCurrentSelectionGlobalDefault ? "Current Default" : "Use as Global Default"}
-            </Button>
-          </div>
+          <span className={styles.controlLabel}>Exchanges</span>
           <div className={styles.marketList}>
-            {visibleMarkets.map((market) => (
-              <label key={market} className={styles.marketOption}>
-                <input
-                  type="checkbox"
-                  checked={selectedMarkets.includes(market)}
-                  onChange={() => toggleMarket(market)}
-                />
-                <span className={styles.marketText}>{MARKETS[market].label}</span>
-                <span className={styles.marketHint}>{getMarketStatusLabel(queryByMarket.get(market))}</span>
-              </label>
-            ))}
+            {visibleMarkets.map((market) => {
+              const status = getMarketStatus(queryByMarket.get(market));
+              const statusLabel = marketStatusLabel[status];
+              return (
+                <label key={market} className={styles.marketOption} title={statusLabel}>
+                  <input
+                    type="checkbox"
+                    checked={selectedMarkets.includes(market)}
+                    onChange={() => toggleMarket(market)}
+                  />
+                  <span className={styles.marketText}>{MARKETS[market].label}</span>
+                  <span
+                    className={`${styles.statusDot} ${marketStatusClass[status]}`}
+                    role="img"
+                    aria-label={statusLabel}
+                  />
+                </label>
+              );
+            })}
           </div>
           <p className={styles.helperText}>
             New assets start with Binance + OKX. Selecting an unchecked exchange downloads its history immediately.
