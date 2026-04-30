@@ -6,9 +6,11 @@ import type {
   FundingRow,
   PricePoint
 } from "../../src/shared/types/market.js";
+import { getOrFetch, peekCache } from "../lib/cache.js";
 import { postUpstreamJson } from "../lib/upstream.js";
 
 const marketDataBase = "https://market-data.grvt.io";
+const metadataTtlMs = 4 * 60 * 60 * 1000;
 const allInstrumentsUrl = `${marketDataBase}/full/v1/all_instruments`;
 const instrumentUrl = `${marketDataBase}/full/v1/instrument`;
 const tickerUrl = `${marketDataBase}/full/v1/ticker`;
@@ -17,6 +19,7 @@ const klineUrl = `${marketDataBase}/full/v1/kline`;
 const fundingHistoryLimit = 1000;
 const candleLimit = 1000;
 const tickerConcurrency = 10;
+const allInstrumentsCacheKey = "grvt:all_instruments:usdt-perp";
 
 interface GrvtListResponse<T> {
   result: T[];
@@ -170,17 +173,19 @@ async function mapWithConcurrency<TIn, TOut>(
 }
 
 async function fetchGrvtAllPerps(): Promise<GrvtInstrumentDto[]> {
-  const envelope = await postUpstreamJson<GrvtListResponse<GrvtInstrumentDto>>(
-    allInstrumentsUrl,
-    { is_active: true, kind: ["PERPETUAL"], quote: ["USDT"] },
-    "GRVT all_instruments API"
-  );
+  return getOrFetch(allInstrumentsCacheKey, metadataTtlMs, async () => {
+    const envelope = await postUpstreamJson<GrvtListResponse<GrvtInstrumentDto>>(
+      allInstrumentsUrl,
+      { is_active: true, kind: ["PERPETUAL"], quote: ["USDT"] },
+      "GRVT all_instruments API"
+    );
 
-  if (!Array.isArray(envelope.result)) {
-    throw new Error("GRVT all_instruments API returned an invalid payload");
-  }
+    if (!Array.isArray(envelope.result)) {
+      throw new Error("GRVT all_instruments API returned an invalid payload");
+    }
 
-  return envelope.result;
+    return envelope.result;
+  });
 }
 
 async function fetchGrvtTicker(instrument: string): Promise<GrvtTickerDto> {
@@ -198,17 +203,19 @@ async function fetchGrvtTicker(instrument: string): Promise<GrvtTickerDto> {
 }
 
 async function fetchGrvtSingleInstrument(instrument: string): Promise<GrvtInstrumentDto> {
-  const envelope = await postUpstreamJson<GrvtSingleResponse<GrvtInstrumentDto>>(
-    instrumentUrl,
-    { instrument },
-    "GRVT instrument API"
-  );
+  return getOrFetch(`grvt:instrument:${instrument}`, metadataTtlMs, async () => {
+    const envelope = await postUpstreamJson<GrvtSingleResponse<GrvtInstrumentDto>>(
+      instrumentUrl,
+      { instrument },
+      "GRVT instrument API"
+    );
 
-  if (!envelope.result || typeof envelope.result !== "object") {
-    throw new Error(`GRVT instrument API returned an invalid payload for ${instrument}`);
-  }
+    if (!envelope.result || typeof envelope.result !== "object") {
+      throw new Error(`GRVT instrument API returned an invalid payload for ${instrument}`);
+    }
 
-  return envelope.result;
+    return envelope.result;
+  });
 }
 
 async function fetchGrvtFundingHistory(
@@ -324,16 +331,21 @@ export async function fetchGrvtRows(): Promise<FundingRow[]> {
 }
 
 export async function fetchGrvtAssetDetail(instrument: string): Promise<AssetDetailMarketData> {
-  const [ticker, instrumentDto] = await Promise.all([
+  const cachedBulk = peekCache<GrvtInstrumentDto[]>(allInstrumentsCacheKey);
+  const cachedHit = cachedBulk?.find((item) => item.instrument === instrument);
+
+  const [ticker, intervalHours] = await Promise.all([
     fetchGrvtTicker(instrument),
-    fetchGrvtSingleInstrument(instrument)
+    cachedHit && cachedHit.funding_interval_hours > 0
+      ? Promise.resolve(cachedHit.funding_interval_hours)
+      : fetchGrvtSingleInstrument(instrument).then((dto) => dto.funding_interval_hours)
   ]);
 
-  if (!instrumentDto.funding_interval_hours || instrumentDto.funding_interval_hours <= 0) {
+  if (!intervalHours || intervalHours <= 0) {
     throw new Error(`Missing GRVT funding interval for ${instrument}`);
   }
 
-  return normalizeGrvtAssetDetail(ticker, instrumentDto.funding_interval_hours);
+  return normalizeGrvtAssetDetail(ticker, intervalHours);
 }
 
 export async function fetchGrvtAssetHistory(

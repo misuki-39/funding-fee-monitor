@@ -1,6 +1,9 @@
 import { formatCycle } from "../../src/shared/lib/formatters.js";
 import type { AssetDetailMarketData, AssetFundingHistoryMarketData, AssetFundingHistoryPoint, FundingRow, PricePoint } from "../../src/shared/types/market.js";
+import { getOrFetch } from "../lib/cache.js";
 import { fetchUpstreamJson } from "../lib/upstream.js";
+
+const metadataTtlMs = 4 * 60 * 60 * 1000;
 
 const premiumIndexUrl = "https://fapi.binance.com/fapi/v1/premiumIndex";
 const fundingInfoUrl = "https://fapi.binance.com/fapi/v1/fundingInfo";
@@ -129,18 +132,26 @@ function normalizeBinanceKline(raw: BinanceKlineDto): PricePoint {
   return { timeMs, price };
 }
 
+async function fetchBinanceFundingInfo(): Promise<BinanceFundingInfoDto[]> {
+  return getOrFetch("binance:fundingInfo", metadataTtlMs, async () => {
+    const fundingInfoRows = await fetchUpstreamJson<BinanceFundingInfoDto[]>(fundingInfoUrl, "Binance fundingInfo API");
+
+    if (!Array.isArray(fundingInfoRows)) {
+      throw new Error("Binance fundingInfo API returned an invalid payload");
+    }
+
+    return fundingInfoRows;
+  });
+}
+
 export async function fetchBinanceRows(): Promise<FundingRow[]> {
   const [premiumRows, fundingInfoRows] = await Promise.all([
     fetchUpstreamJson<BinancePremiumIndexDto[]>(premiumIndexUrl, "Binance premiumIndex API"),
-    fetchUpstreamJson<BinanceFundingInfoDto[]>(fundingInfoUrl, "Binance fundingInfo API")
+    fetchBinanceFundingInfo()
   ]);
 
   if (!Array.isArray(premiumRows)) {
     throw new Error("Binance premiumIndex API returned an invalid payload");
-  }
-
-  if (!Array.isArray(fundingInfoRows)) {
-    throw new Error("Binance fundingInfo API returned an invalid payload");
   }
 
   return mergeBinanceRows(premiumRows, fundingInfoRows);
@@ -152,15 +163,11 @@ export async function fetchBinanceAssetDetail(symbol: string): Promise<AssetDeta
       `${premiumIndexUrl}?symbol=${encodeURIComponent(symbol)}`,
       "Binance premiumIndex detail API"
     ),
-    fetchUpstreamJson<BinanceFundingInfoDto[]>(fundingInfoUrl, "Binance fundingInfo API")
+    fetchBinanceFundingInfo()
   ]);
 
   if (!row || Array.isArray(row)) {
     throw new Error("Binance premiumIndex detail API returned an invalid payload");
-  }
-
-  if (!Array.isArray(fundingInfoRows)) {
-    throw new Error("Binance fundingInfo API returned an invalid payload");
   }
 
   const intervalMap = createBinanceIntervalMap(fundingInfoRows);

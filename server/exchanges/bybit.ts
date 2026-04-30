@@ -6,7 +6,11 @@ import type {
   FundingRow,
   PricePoint
 } from "../../src/shared/types/market.js";
+import { getOrFetch, peekCache } from "../lib/cache.js";
 import { fetchUpstreamJson } from "../lib/upstream.js";
+
+const metadataTtlMs = 4 * 60 * 60 * 1000;
+const bulkInstrumentsInfoCacheKey = "bybit:instruments-info:all";
 
 const bybitCategory = "linear";
 const tickersUrl = "https://api.bybit.com/v5/market/tickers";
@@ -161,16 +165,19 @@ async function fetchBybitTickers(symbol?: string): Promise<BybitTickerDto[]> {
 }
 
 async function fetchBybitInstrumentsInfo(symbol?: string): Promise<BybitInstrumentInfoDto[]> {
-  const search = createBybitSearchParams({
-    category: bybitCategory,
-    ...(symbol ? { symbol } : {})
-  });
-  const envelope = await fetchUpstreamJson<BybitEnvelope<BybitInstrumentInfoDto>>(
-    `${instrumentsInfoUrl}?${search}`,
-    "Bybit instruments-info API"
-  );
+  const cacheKey = symbol ? `bybit:instruments-info:${symbol}` : bulkInstrumentsInfoCacheKey;
+  return getOrFetch(cacheKey, metadataTtlMs, async () => {
+    const search = createBybitSearchParams({
+      category: bybitCategory,
+      ...(symbol ? { symbol } : {})
+    });
+    const envelope = await fetchUpstreamJson<BybitEnvelope<BybitInstrumentInfoDto>>(
+      `${instrumentsInfoUrl}?${search}`,
+      "Bybit instruments-info API"
+    );
 
-  return assertBybitSuccess(envelope, "Bybit instruments-info API");
+    return assertBybitSuccess(envelope, "Bybit instruments-info API");
+  });
 }
 
 async function fetchBybitFundingHistory(
@@ -275,9 +282,17 @@ export async function fetchBybitRows(): Promise<FundingRow[]> {
 }
 
 export async function fetchBybitAssetDetail(symbol: string): Promise<AssetDetailMarketData> {
-  const [tickers, instruments] = await Promise.all([
+  const cachedBulk = peekCache<BybitInstrumentInfoDto[]>(bulkInstrumentsInfoCacheKey);
+  const cachedHit = cachedBulk?.find((item) => item.symbol === symbol);
+  const cachedIntervalHours = cachedHit && typeof cachedHit.fundingInterval === "number" && cachedHit.fundingInterval > 0
+    ? cachedHit.fundingInterval / 60
+    : null;
+
+  const [tickers, intervalHours] = await Promise.all([
     fetchBybitTickers(symbol),
-    fetchBybitInstrumentsInfo(symbol)
+    cachedIntervalHours != null
+      ? Promise.resolve(cachedIntervalHours)
+      : fetchBybitInstrumentsInfo(symbol).then((rows) => getBybitIntervalHours(createBybitIntervalMap(rows), symbol))
   ]);
 
   const ticker = tickers[0];
@@ -286,8 +301,7 @@ export async function fetchBybitAssetDetail(symbol: string): Promise<AssetDetail
     throw new Error(`Bybit asset detail not found for ${symbol}`);
   }
 
-  const intervalMap = createBybitIntervalMap(instruments);
-  return normalizeBybitAssetDetail(ticker, getBybitIntervalHours(intervalMap, ticker.symbol));
+  return normalizeBybitAssetDetail(ticker, intervalHours);
 }
 
 export async function fetchBybitAssetHistory(
