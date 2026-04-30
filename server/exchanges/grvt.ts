@@ -7,6 +7,8 @@ import type {
   PricePoint
 } from "../../src/shared/types/market.js";
 import { getOrFetch, peekCache } from "../lib/cache.js";
+import { mapWithConcurrency } from "../lib/concurrency.js";
+import { dedupeByTime } from "../lib/timeSeries.js";
 import { postUpstreamJson } from "../lib/upstream.js";
 
 const marketDataBase = "https://market-data.grvt.io";
@@ -18,7 +20,7 @@ const fundingUrl = `${marketDataBase}/full/v1/funding`;
 const klineUrl = `${marketDataBase}/full/v1/kline`;
 const fundingHistoryLimit = 1000;
 const candleLimit = 1000;
-const tickerConcurrency = 10;
+const tickerConcurrency = 20;
 const allInstrumentsCacheKey = "grvt:all_instruments:usdt-perp";
 
 interface GrvtListResponse<T> {
@@ -77,30 +79,6 @@ function parseGrvtPercentageRate(value: string): number {
   return rate / 100;
 }
 
-export function createGrvtIntervalMap(rows: GrvtInstrumentDto[]): Map<string, number> {
-  const intervalMap = new Map<string, number>();
-
-  for (const item of rows) {
-    if (!item.instrument || typeof item.funding_interval_hours !== "number" || item.funding_interval_hours <= 0) {
-      continue;
-    }
-
-    intervalMap.set(item.instrument, item.funding_interval_hours);
-  }
-
-  return intervalMap;
-}
-
-function getGrvtIntervalHours(intervalMap: Map<string, number>, instrument: string): number {
-  const intervalHours = intervalMap.get(instrument);
-
-  if (intervalHours == null) {
-    throw new Error(`Missing GRVT funding interval for ${instrument}`);
-  }
-
-  return intervalHours;
-}
-
 export function normalizeGrvtRow(raw: GrvtTickerDto, intervalHours: number): FundingRow {
   if (!raw.instrument) {
     throw new Error(`Invalid GRVT ticker row: ${JSON.stringify(raw)}`);
@@ -148,28 +126,6 @@ export function normalizeGrvtCandle(raw: GrvtCandleDto): PricePoint {
   }
 
   return { timeMs: nsToMs(raw.open_time), price };
-}
-
-async function mapWithConcurrency<TIn, TOut>(
-  items: TIn[],
-  concurrency: number,
-  worker: (item: TIn) => Promise<TOut>
-): Promise<TOut[]> {
-  const results: TOut[] = Array.from({ length: items.length }, () => undefined as unknown as TOut);
-  let cursor = 0;
-
-  async function runOne() {
-    while (true) {
-      const index = cursor;
-      cursor += 1;
-      if (index >= items.length) return;
-      results[index] = await worker(items[index]);
-    }
-  }
-
-  const runners = Array.from({ length: Math.min(concurrency, items.length) }, () => runOne());
-  await Promise.all(runners);
-  return results;
 }
 
 async function fetchGrvtAllPerps(): Promise<GrvtInstrumentDto[]> {
@@ -257,11 +213,7 @@ async function fetchGrvtFundingHistory(
     cursor = envelope.next;
   }
 
-  return [...new Map(
-    points
-      .filter((point) => point.fundingTimeMs >= startTimeMs && point.fundingTimeMs <= endTimeMs)
-      .map((point) => [point.fundingTimeMs, point] as const)
-  ).values()].sort((left, right) => left.fundingTimeMs - right.fundingTimeMs);
+  return dedupeByTime(points, (point) => point.fundingTimeMs, startTimeMs, endTimeMs);
 }
 
 async function fetchGrvtMarkPriceHistory(
@@ -305,17 +257,12 @@ async function fetchGrvtMarkPriceHistory(
     cursor = envelope.next;
   }
 
-  return [...new Map(
-    candles
-      .filter((point) => point.timeMs >= startTimeMs && point.timeMs <= endTimeMs)
-      .map((point) => [point.timeMs, point] as const)
-  ).values()].sort((left, right) => left.timeMs - right.timeMs);
+  return dedupeByTime(candles, (point) => point.timeMs, startTimeMs, endTimeMs);
 }
 
 export async function fetchGrvtRows(): Promise<FundingRow[]> {
   const instruments = await fetchGrvtAllPerps();
-  const intervalMap = createGrvtIntervalMap(instruments);
-  const eligible = instruments.filter((item) => intervalMap.has(item.instrument));
+  const eligible = instruments.filter((item) => item.funding_interval_hours > 0);
 
   const tickers = await mapWithConcurrency(eligible, tickerConcurrency, async (item) => {
     try {
@@ -325,9 +272,13 @@ export async function fetchGrvtRows(): Promise<FundingRow[]> {
     }
   });
 
-  return tickers
-    .filter((ticker): ticker is GrvtTickerDto => ticker !== null && ticker.funding_rate !== "" && ticker.next_funding_time !== "")
-    .map((ticker) => normalizeGrvtRow(ticker, getGrvtIntervalHours(intervalMap, ticker.instrument)));
+  return eligible.flatMap((item, index) => {
+    const ticker = tickers[index];
+    if (!ticker || ticker.funding_rate === "" || ticker.next_funding_time === "") {
+      return [];
+    }
+    return [normalizeGrvtRow(ticker, item.funding_interval_hours)];
+  });
 }
 
 export async function fetchGrvtAssetDetail(instrument: string): Promise<AssetDetailMarketData> {
@@ -340,10 +291,6 @@ export async function fetchGrvtAssetDetail(instrument: string): Promise<AssetDet
       ? Promise.resolve(cachedHit.funding_interval_hours)
       : fetchGrvtSingleInstrument(instrument).then((dto) => dto.funding_interval_hours)
   ]);
-
-  if (!intervalHours || intervalHours <= 0) {
-    throw new Error(`Missing GRVT funding interval for ${instrument}`);
-  }
 
   return normalizeGrvtAssetDetail(ticker, intervalHours);
 }

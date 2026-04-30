@@ -9,7 +9,6 @@ import {
   normalizeBybitRow
 } from "./bybit.js";
 import {
-  createGrvtIntervalMap,
   normalizeGrvtAssetDetail,
   normalizeGrvtCandle,
   normalizeGrvtFundingHistoryPoint,
@@ -236,18 +235,6 @@ describe("exchange adapters", () => {
       timeMs: 1775059200000,
       price: 1.2345
     });
-  });
-
-  test("createGrvtIntervalMap reads funding interval hours per instrument", () => {
-    const intervalMap = createGrvtIntervalMap([
-      { instrument: "BTC_USDT_Perp", base: "BTC", quote: "USDT", kind: "PERPETUAL", funding_interval_hours: 8 },
-      { instrument: "AI16Z_USDT_Perp", base: "AI16Z", quote: "USDT", kind: "PERPETUAL", funding_interval_hours: 4 },
-      { instrument: "BAD_USDT_Perp", base: "BAD", quote: "USDT", kind: "PERPETUAL", funding_interval_hours: 0 }
-    ]);
-
-    expect(intervalMap.get("BTC_USDT_Perp")).toBe(8);
-    expect(intervalMap.get("AI16Z_USDT_Perp")).toBe(4);
-    expect(intervalMap.has("BAD_USDT_Perp")).toBe(false);
   });
 
   test("normalizeGrvtRow converts percentage-point funding rate and ns timestamp", () => {
