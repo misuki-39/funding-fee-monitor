@@ -13,6 +13,7 @@ import { fetchAssetHistoryByMarket } from "./services/assetHistory.js";
 import { fetchFundingRatesByMarket } from "./services/fundingRates.js";
 
 const ASSET_HISTORY_CACHE_CONTROL = "public, max-age=0, s-maxage=900, stale-while-revalidate=60";
+const FUNDING_CACHE_CONTROL = "public, max-age=0, s-maxage=30, stale-while-revalidate=60";
 
 interface AppDependencies {
   getFundingRates: (market: MarketKey) => Promise<FundingRow[]>;
@@ -55,6 +56,7 @@ export function createApiApp(dependencies: AppDependencies = defaultDependencies
       sourceUrl: MARKETS[marketValue].sourceUrl
     };
 
+    c.header("Cache-Control", FUNDING_CACHE_CONTROL);
     return c.json(response);
   });
 
@@ -73,6 +75,7 @@ export function createApiApp(dependencies: AppDependencies = defaultDependencies
       sourceLabel: ASSET_DETAIL_SOURCE_LABEL
     };
 
+    c.header("Cache-Control", FUNDING_CACHE_CONTROL);
     return c.json(response);
   });
 

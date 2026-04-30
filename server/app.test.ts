@@ -22,6 +22,7 @@ describe("api app", () => {
     const payload = await response.json() as FundingRatesResponse;
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("public, max-age=0, s-maxage=30, stale-while-revalidate=60");
     expect(payload.market).toBe("binance");
     expect(payload.fetchedAt).toBe(123);
     expect(payload.rows).toHaveLength(1);
@@ -111,6 +112,7 @@ describe("api app", () => {
     const payload = await response.json() as AssetDetailResponse;
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("public, max-age=0, s-maxage=30, stale-while-revalidate=60");
     expect(payload.base).toBe("龙虾");
     expect(payload.fetchedAt).toBe(456);
     expect(payload.rows[0].symbol).toBe("龙虾_USDT");
@@ -172,6 +174,34 @@ describe("api app", () => {
     });
 
     const response = await app.request("/assets/%E9%BE%99%E8%99%BE/history/binance?days=7");
+
+    expect(response.status).toBe(500);
+    expect(response.headers.get("cache-control")).toBeNull();
+  });
+
+  test("does not cache failed funding rates fetches", async () => {
+    const app = createApiApp({
+      getFundingRates: vi.fn().mockRejectedValue(new Error("upstream failed")),
+      getAssetDetails: vi.fn(),
+      getAssetHistoryByMarket: vi.fn(),
+      now: () => 0
+    });
+
+    const response = await app.request("/markets/binance/funding-rates");
+
+    expect(response.status).toBe(500);
+    expect(response.headers.get("cache-control")).toBeNull();
+  });
+
+  test("does not cache failed asset detail fetches", async () => {
+    const app = createApiApp({
+      getFundingRates: vi.fn(),
+      getAssetDetails: vi.fn().mockRejectedValue(new Error("upstream failed")),
+      getAssetHistoryByMarket: vi.fn(),
+      now: () => 0
+    });
+
+    const response = await app.request("/assets/BTC");
 
     expect(response.status).toBe(500);
     expect(response.headers.get("cache-control")).toBeNull();
