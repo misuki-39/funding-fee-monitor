@@ -51,7 +51,7 @@ a {
 
 .app-shell {
   width: min(1180px, calc(100vw - 32px));
-  margin: 32px auto 48px;
+  margin: 18px auto 48px;
 }
 
 .panel {
@@ -107,6 +107,6 @@ a {
 @media (max-width: 860px) {
   .app-shell {
     width: calc(100vw - 20px);
-    margin: 20px auto 32px;
+    margin: 14px auto 32px;
   }
 }

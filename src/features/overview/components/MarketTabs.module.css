@@ -9,3 +9,24 @@
   color: #fff7ef;
   box-shadow: 0 10px 24px rgba(157, 60, 23, 0.16);
 }
+
+.compact {
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.compact::-webkit-scrollbar {
+  display: none;
+}
+
+.compact > button {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  scroll-snap-align: start;
+}
+
+.compact > .active {
+  box-shadow: none;
+}

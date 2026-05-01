@@ -26,7 +26,7 @@ describe("OverviewPage", () => {
     renderWithQueryClient(<OverviewPage />);
 
     expect(screen.getByText("WAL-USDT-SWAP")).toBeInTheDocument();
-    expect(screen.getByText(/Loaded 1 OKX rows/)).toBeInTheDocument();
+    expect(screen.queryByText(/Loaded/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "WAL-USDT-SWAP" })).toHaveAttribute("href", "/assets/WAL");
     expect(screen.getByRole("button", { name: "Bitget" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Bybit" })).toBeInTheDocument();

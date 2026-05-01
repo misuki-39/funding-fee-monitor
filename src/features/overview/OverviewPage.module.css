@@ -1,25 +1,20 @@
-.hero {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  align-items: flex-start;
-  padding: 28px;
-  margin-bottom: 18px;
+.brand {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-size: 1rem;
+  color: var(--text);
+  white-space: nowrap;
 }
 
-.controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+.lastUpdated {
+  color: var(--muted);
+  font-size: 0.82rem;
+  white-space: nowrap;
 }
 
-.meta {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 18px;
+.refreshButton {
+  padding: 6px 14px;
+  font-size: 0.85rem;
 }
 
 .filters {
@@ -43,7 +38,7 @@
 }
 
 @media (max-width: 860px) {
-  .hero {
-    flex-direction: column;
+  .lastUpdated {
+    display: none;
   }
 }

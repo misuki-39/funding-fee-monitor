@@ -3,15 +3,20 @@ import type { MarketKey } from "../../../shared/types/market.js";
 import { Button } from "../../../shared/ui/Button.js";
 import styles from "./MarketTabs.module.css";
 
+type Size = "default" | "compact";
+
 interface MarketTabsProps {
   currentMarket: MarketKey;
   disabled?: boolean;
+  size?: Size;
   onSelect: (market: MarketKey) => void;
 }
 
-export function MarketTabs({ currentMarket, disabled = false, onSelect }: MarketTabsProps) {
+export function MarketTabs({ currentMarket, disabled = false, size = "default", onSelect }: MarketTabsProps) {
+  const groupClass = size === "compact" ? `${styles.group} ${styles.compact}` : styles.group;
+
   return (
-    <div className={styles.group} aria-label="Exchange selector">
+    <div className={groupClass} aria-label="Exchange selector">
       {Object.values(MARKETS).map((market) => {
         const isActive = market.key === currentMarket;
 
