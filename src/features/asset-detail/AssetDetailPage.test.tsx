@@ -3,6 +3,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { ExchangePreferencesProvider } from "../../shared/exchanges/ExchangePreferencesProvider.js";
 import { createTestQueryClient } from "../../test-utils.js";
 import { AssetDetailPage } from "./AssetDetailPage.js";
 
@@ -184,7 +185,9 @@ describe("AssetDetailPage", () => {
 
     render(
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <ExchangePreferencesProvider>
+          <RouterProvider router={router} />
+        </ExchangePreferencesProvider>
       </QueryClientProvider>
     );
 

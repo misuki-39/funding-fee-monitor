@@ -6,6 +6,8 @@ export const ASSET_DETAIL_SOURCE_LABEL =
 export const ASSET_HISTORY_SOURCE_LABEL =
   "Binance fundingRate | OKX funding-rate-history + history-mark-price-candles | Gate funding_rate + candlesticks | Bitget history-fund-rate + candles(MARK) | Bybit funding/history + mark-price-kline | GRVT funding + kline(MARK)";
 
+export const MARKET_KEYS: MarketKey[] = ["okx", "binance", "gate", "bitget", "bybit", "grvt"];
+
 export const MARKETS: Record<MarketKey, MarketConfig> = {
   okx: {
     key: "okx",

@@ -1,10 +1,8 @@
 import { useEffect } from "react";
-import { MARKETS } from "../../../shared/config/markets.js";
 import type { MarketKey } from "../../../shared/types/market.js";
 
-const MARKET_ORDER = Object.keys(MARKETS) as MarketKey[];
-
 interface KeyboardShortcutsOptions {
+  enabledKeys: MarketKey[];
   onSelectMarket: (market: MarketKey) => void;
   onRefresh: () => void;
 }
@@ -16,7 +14,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
   return target.isContentEditable;
 }
 
-export function useKeyboardShortcuts({ onSelectMarket, onRefresh }: KeyboardShortcutsOptions) {
+export function useKeyboardShortcuts({ enabledKeys, onSelectMarket, onRefresh }: KeyboardShortcutsOptions) {
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
@@ -29,13 +27,13 @@ export function useKeyboardShortcuts({ onSelectMarket, onRefresh }: KeyboardShor
       }
 
       const digit = Number.parseInt(event.key, 10);
-      if (!Number.isNaN(digit) && digit >= 1 && digit <= MARKET_ORDER.length) {
+      if (!Number.isNaN(digit) && digit >= 1 && digit <= enabledKeys.length) {
         event.preventDefault();
-        onSelectMarket(MARKET_ORDER[digit - 1]);
+        onSelectMarket(enabledKeys[digit - 1]);
       }
     };
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onSelectMarket, onRefresh]);
+  }, [enabledKeys, onSelectMarket, onRefresh]);
 }

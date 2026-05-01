@@ -1,9 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ASSET_DETAIL_SOURCE_LABEL } from "../../shared/config/markets.js";
+import { useDisabledExchanges } from "../../shared/exchanges/ExchangePreferencesContext.js";
 import { formatLastUpdated } from "../../shared/lib/formatters.js";
 import { AppHeader } from "../../shared/ui/AppHeader.js";
 import { MetaPill } from "../../shared/ui/MetaPill.js";
+import { SettingsMenu } from "../../shared/ui/SettingsMenu.js";
 import { StatusBanner } from "../../shared/ui/StatusBanner.js";
 import { useAssetDetailQuery } from "./api.js";
 import { AssetComparisonTable } from "./components/AssetComparisonTable.js";
@@ -14,7 +16,14 @@ export function AssetDetailPage() {
   const params = useParams();
   const base = params.base ?? "";
   const query = useAssetDetailQuery(base);
-  const availableMarkets = query.data?.rows.filter((row) => row.available).map((row) => row.market) ?? null;
+  const { disabled } = useDisabledExchanges();
+  const availableMarkets = useMemo(
+    () =>
+      query.data?.rows
+        .filter((row) => row.available && !disabled.has(row.market))
+        .map((row) => row.market) ?? null,
+    [query.data?.rows, disabled]
+  );
 
   useEffect(() => {
     document.title = base ? `${base} Funding Comparison` : "Asset Funding Comparison";
@@ -39,7 +48,12 @@ export function AssetDetailPage() {
             <strong className={styles.asset}>{base || "Asset"}</strong>
           </>
         }
-        right={<span className={styles.lastUpdated}>{formatLastUpdated(query.data?.fetchedAt ?? null)}</span>}
+        right={
+          <>
+            <span className={styles.lastUpdated}>{formatLastUpdated(query.data?.fetchedAt ?? null)}</span>
+            <SettingsMenu />
+          </>
+        }
       />
       <main className="app-shell">
         <section className={`panel ${styles.panel}`}>

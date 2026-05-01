@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MARKETS, PAGE_SIZE } from "../../shared/config/markets.js";
+import { useEnabledMarketKeys } from "../../shared/exchanges/ExchangePreferencesContext.js";
 import { filterRows } from "../../shared/lib/filterRows.js";
 import { formatLastUpdated } from "../../shared/lib/formatters.js";
 import { sortRows } from "../../shared/lib/sortRows.js";
 import type { MarketKey, SettlementFilter, SortDirection } from "../../shared/types/market.js";
 import { AppHeader } from "../../shared/ui/AppHeader.js";
 import { Button } from "../../shared/ui/Button.js";
+import { SettingsMenu } from "../../shared/ui/SettingsMenu.js";
 import { StatusBanner } from "../../shared/ui/StatusBanner.js";
 import { useFundingRatesQuery } from "./api.js";
 import { FundingRatesTable } from "./components/FundingRatesTable.js";
@@ -19,12 +21,20 @@ export function OverviewPage() {
   const [market, setMarket] = useState<MarketKey>(() => readOverviewMarket());
   const [settlementFilter, setSettlementFilter] = useState<SettlementFilter>("all");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const enabledKeys = useEnabledMarketKeys();
   const query = useFundingRatesQuery(market);
 
-  const handleSelectMarket = (next: MarketKey) => {
+  const handleSelectMarket = useCallback((next: MarketKey) => {
     setMarket(next);
     persistOverviewMarket(next);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!enabledKeys.includes(market)) {
+      handleSelectMarket(enabledKeys[0]);
+    }
+  }, [enabledKeys, market, handleSelectMarket]);
+
   const marketConfig = MARKETS[market];
   const rows = query.data?.rows ?? [];
   const visibleRows = sortRows(filterRows(rows, settlementFilter), sortDirection).slice(0, PAGE_SIZE);
@@ -34,6 +44,7 @@ export function OverviewPage() {
   }, [marketConfig.title]);
 
   useKeyboardShortcuts({
+    enabledKeys,
     onSelectMarket: handleSelectMarket,
     onRefresh: () => void query.refetch()
   });
@@ -62,6 +73,7 @@ export function OverviewPage() {
             <Button disabled={query.isFetching} onClick={() => void query.refetch()} className={styles.refreshButton}>
               {query.isFetching ? "..." : "Refresh"}
             </Button>
+            <SettingsMenu />
           </>
         }
       />

@@ -1,4 +1,4 @@
-import { MARKETS } from "../../../shared/config/markets.js";
+import { useEnabledMarkets } from "../../../shared/exchanges/ExchangePreferencesContext.js";
 import type { MarketKey } from "../../../shared/types/market.js";
 import { Button } from "../../../shared/ui/Button.js";
 import styles from "./MarketTabs.module.css";
@@ -13,11 +13,12 @@ interface MarketTabsProps {
 }
 
 export function MarketTabs({ currentMarket, disabled = false, size = "default", onSelect }: MarketTabsProps) {
+  const enabledMarkets = useEnabledMarkets();
   const groupClass = size === "compact" ? `${styles.group} ${styles.compact}` : styles.group;
 
   return (
     <div className={groupClass} aria-label="Exchange selector">
-      {Object.values(MARKETS).map((market) => {
+      {enabledMarkets.map((market) => {
         const isActive = market.key === currentMarket;
 
         return (

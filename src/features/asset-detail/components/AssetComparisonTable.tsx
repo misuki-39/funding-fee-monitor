@@ -1,4 +1,5 @@
 import { MARKETS } from "../../../shared/config/markets.js";
+import { useDisabledExchanges } from "../../../shared/exchanges/ExchangePreferencesContext.js";
 import { formatAnnualizedRate, formatPrice, parseCycleHours, formatRate } from "../../../shared/lib/formatters.js";
 import type { AssetDetailRow } from "../../../shared/types/market.js";
 import styles from "./AssetComparisonTable.module.css";
@@ -8,7 +9,8 @@ interface AssetComparisonTableProps {
 }
 
 export function AssetComparisonTable({ rows }: AssetComparisonTableProps) {
-  const availableRows = rows.filter((row) => row.available);
+  const { disabled } = useDisabledExchanges();
+  const availableRows = rows.filter((row) => row.available && !disabled.has(row.market));
 
   return (
     <div className={styles.shell}>

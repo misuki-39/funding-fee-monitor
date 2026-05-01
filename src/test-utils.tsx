@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
 import type { PropsWithChildren, ReactElement } from "react";
 import { MemoryRouter } from "react-router-dom";
+import { ExchangePreferencesProvider } from "./shared/exchanges/ExchangePreferencesProvider.js";
 
 export function createTestQueryClient() {
   return new QueryClient({
@@ -19,7 +20,9 @@ export function renderWithQueryClient(ui: ReactElement) {
   function Wrapper({ children }: PropsWithChildren) {
     return (
       <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        <QueryClientProvider client={queryClient}>
+          <ExchangePreferencesProvider>{children}</ExchangePreferencesProvider>
+        </QueryClientProvider>
       </MemoryRouter>
     );
   }
