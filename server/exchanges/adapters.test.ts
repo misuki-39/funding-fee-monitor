@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { mergeAsterRows, normalizeAsterAssetDetail, normalizeAsterHistoryPoint } from "./aster.js";
 import { mergeBinanceRows, normalizeBinanceAssetDetail, normalizeBinanceHistoryPoint } from "./binance.js";
 import { normalizeBitgetAssetDetail, normalizeBitgetCandle, normalizeBitgetFundingHistoryPoint, normalizeBitgetRow } from "./bitget.js";
 import {
@@ -285,5 +286,65 @@ describe("exchange adapters", () => {
       timeMs: 1777538700000,
       price: 76092.036615747
     });
+  });
+
+  test("normalizeAsterAssetDetail reads funding rate and mark price", () => {
+    expect(normalizeAsterAssetDetail({
+      symbol: "BTCUSDT",
+      lastFundingRate: "0.00038246",
+      nextFundingTime: 1597392000000,
+      markPrice: "11793.63104562"
+    }, 4)).toEqual({
+      symbol: "BTCUSDT",
+      fundingRate: 0.00038246,
+      markPrice: 11793.63104562,
+      cycleLabel: "4h"
+    });
+  });
+
+  test("normalizeAsterHistoryPoint reads funding history without markPrice", () => {
+    expect(normalizeAsterHistoryPoint({
+      symbol: "BTCUSDT",
+      fundingRate: "-0.03750000",
+      fundingTime: 1570608000000
+    })).toEqual({
+      fundingTimeMs: 1570608000000,
+      fundingRate: -0.0375
+    });
+  });
+
+  test("mergeAsterRows skips contracts with missing funding interval and USD1-quoted perps", () => {
+    const result = mergeAsterRows([
+      {
+        symbol: "BTCUSDT",
+        lastFundingRate: "0.0001",
+        nextFundingTime: 10_000,
+        markPrice: "11793.63104562"
+      },
+      {
+        symbol: "ETHUSD1",
+        lastFundingRate: "0.0002",
+        nextFundingTime: 30_000,
+        markPrice: "3500"
+      },
+      {
+        symbol: "ZORAUSDT",
+        lastFundingRate: "0.00005",
+        nextFundingTime: 20_000,
+        markPrice: "0.5234"
+      }
+    ], [
+      { symbol: "ETHUSD1", fundingIntervalHours: 8 },
+      { symbol: "ZORAUSDT", fundingIntervalHours: 4 }
+    ]);
+
+    expect(result).toEqual([
+      {
+        symbol: "ZORAUSDT",
+        fundingRate: 0.00005,
+        cycleLabel: "4h",
+        settlementTimeMs: 20_000
+      }
+    ]);
   });
 });

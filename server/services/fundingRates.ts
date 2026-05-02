@@ -1,3 +1,4 @@
+import { fetchAsterRows } from "../exchanges/aster.js";
 import { fetchBinanceRows } from "../exchanges/binance.js";
 import { fetchBitgetRows } from "../exchanges/bitget.js";
 import { fetchBybitRows } from "../exchanges/bybit.js";
@@ -12,7 +13,8 @@ const marketFetchers: Record<MarketKey, () => Promise<FundingRow[]>> = {
   gate: fetchGateRows,
   bitget: fetchBitgetRows,
   bybit: fetchBybitRows,
-  grvt: fetchGrvtRows
+  grvt: fetchGrvtRows,
+  aster: fetchAsterRows
 };
 
 export function fetchFundingRatesByMarket(market: MarketKey) {
