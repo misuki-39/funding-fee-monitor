@@ -147,8 +147,7 @@ vi.mock("./api.js", () => ({
           errorMessage: null
         }
       ],
-      fetchedAt: 456,
-      sourceLabel: "detail-source"
+      fetchedAt: 456
     },
     isPending: false,
     isError: false,
@@ -160,8 +159,7 @@ vi.mock("./api.js", () => ({
       market,
       days,
       row: historyRowsByMarket[market],
-      fetchedAt: 789,
-      sourceLabel: `${market}-source`
+      fetchedAt: 789
     },
     isPending: false,
     isFetching: false,

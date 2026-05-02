@@ -1,11 +1,11 @@
 import { useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ASSET_DETAIL_SOURCE_LABEL } from "../../shared/config/markets.js";
+import { ASSET_DETAIL_SOURCES } from "../../shared/config/markets.js";
 import { useDisabledExchanges } from "../../shared/exchanges/ExchangePreferencesContext.js";
 import { formatLastUpdated } from "../../shared/lib/formatters.js";
 import { AppHeader } from "../../shared/ui/AppHeader.js";
-import { MetaPill } from "../../shared/ui/MetaPill.js";
 import { SettingsMenu } from "../../shared/ui/SettingsMenu.js";
+import { SourceChips } from "../../shared/ui/SourceChips.js";
 import { StatusBanner } from "../../shared/ui/StatusBanner.js";
 import { useAssetDetailQuery } from "./api.js";
 import { AssetComparisonTable } from "./components/AssetComparisonTable.js";
@@ -61,7 +61,7 @@ export function AssetDetailPage() {
             <div>
               <h2 className={styles.panelTitle}>Live Funding Board</h2>
             </div>
-            <MetaPill>{query.data?.sourceLabel ?? ASSET_DETAIL_SOURCE_LABEL}</MetaPill>
+            <SourceChips sources={ASSET_DETAIL_SOURCES} marketKeys={availableMarkets ?? []} />
           </div>
 
           {statusMessage || !base || query.isError ? (

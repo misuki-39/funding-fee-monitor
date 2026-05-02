@@ -11,7 +11,6 @@ export interface AssetDetailResponse {
   base: string;
   rows: AssetDetailRow[];
   fetchedAt: number;
-  sourceLabel: string;
 }
 
 export interface AssetFundingHistoryMarketResponse {

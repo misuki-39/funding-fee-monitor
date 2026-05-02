@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { ASSET_DETAIL_SOURCE_LABEL, MARKETS, isMarketKey } from "../src/shared/config/markets.js";
+import { MARKETS, isMarketKey } from "../src/shared/config/markets.js";
 import type {
   AssetDetailResponse,
   AssetFundingHistoryMarketResponse,
@@ -71,8 +71,7 @@ export function createApiApp(dependencies: AppDependencies = defaultDependencies
     const response: AssetDetailResponse = {
       base,
       rows,
-      fetchedAt: dependencies.now(),
-      sourceLabel: ASSET_DETAIL_SOURCE_LABEL
+      fetchedAt: dependencies.now()
     };
 
     c.header("Cache-Control", FUNDING_CACHE_CONTROL);

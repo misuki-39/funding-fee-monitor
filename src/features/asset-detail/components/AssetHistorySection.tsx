@@ -10,12 +10,12 @@ import {
   XAxis,
   YAxis
 } from "recharts";
-import { ASSET_HISTORY_SOURCE_LABEL, MARKETS } from "../../../shared/config/markets.js";
+import { ASSET_HISTORY_SOURCES, MARKETS, MARKET_COLORS } from "../../../shared/config/markets.js";
 import { formatAbsoluteTime, formatPrice, formatRate } from "../../../shared/lib/formatters.js";
 import type { AssetFundingHistoryMarketResponse } from "../../../shared/types/api.js";
 import type { AssetFundingHistoryRow, MarketKey } from "../../../shared/types/market.js";
 import { Button } from "../../../shared/ui/Button.js";
-import { MetaPill } from "../../../shared/ui/MetaPill.js";
+import { SourceChips } from "../../../shared/ui/SourceChips.js";
 import { StatusBanner } from "../../../shared/ui/StatusBanner.js";
 import { useAssetHistoryQueries } from "../api.js";
 import {
@@ -30,17 +30,6 @@ import {
   sortHistoryMarkets
 } from "../lib/historyPreferences.js";
 import styles from "./AssetHistorySection.module.css";
-
-const marketColors: Record<MarketKey, string> = {
-  okx: "#9d3c17",
-  binance: "#8c6a00",
-  gate: "#11643c",
-  bitget: "#1d4ed8",
-  bybit: "#f59e0b",
-  grvt: "#0ea5e9",
-  aster: "#a855f7",
-  hyperliquid: "#22c55e"
-};
 
 const pairColors = ["#2563eb", "#d946ef", "#ea580c", "#0d9488", "#7c3aed", "#dc2626"];
 
@@ -274,7 +263,7 @@ export function AssetHistorySection({ base, availableMarkets }: AssetHistorySect
         <div>
           <h2 className={styles.title}>Funding History and Pairwise Cumulative Spread</h2>
         </div>
-        <MetaPill>{ASSET_HISTORY_SOURCE_LABEL}</MetaPill>
+        <SourceChips sources={ASSET_HISTORY_SOURCES} marketKeys={visibleMarkets} />
       </div>
 
       <div className={styles.controls}>
@@ -366,7 +355,7 @@ export function AssetHistorySection({ base, availableMarkets }: AssetHistorySect
                       type="linear"
                       dataKey={`funding:${market}`}
                       name={`funding:${market}`}
-                      stroke={marketColors[market]}
+                      stroke={MARKET_COLORS[market]}
                       strokeWidth={2}
                       dot={false}
                       connectNulls={false}
@@ -380,7 +369,7 @@ export function AssetHistorySection({ base, availableMarkets }: AssetHistorySect
                       type="monotone"
                       dataKey={`price:${market}`}
                       name={`price:${market}`}
-                      stroke={marketColors[market]}
+                      stroke={MARKET_COLORS[market]}
                       strokeDasharray="6 4"
                       strokeOpacity={0.45}
                       strokeWidth={2}
