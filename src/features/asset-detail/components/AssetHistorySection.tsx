@@ -133,20 +133,6 @@ function trimRows(rows: AssetFundingHistoryRow[], days: number, fetchedDays: num
 type HistoryQuery = UseQueryResult<AssetFundingHistoryMarketResponse, Error>;
 type MarketStatus = "idle" | "loading" | "ready" | "failed";
 
-const marketStatusLabel: Record<MarketStatus, string> = {
-  idle: "Not loaded",
-  loading: "Loading",
-  ready: "Ready",
-  failed: "Failed"
-};
-
-const marketStatusClass: Record<MarketStatus, string> = {
-  idle: styles.status_idle,
-  loading: styles.status_loading,
-  ready: styles.status_ready,
-  failed: styles.status_failed
-};
-
 function getMarketStatus(query: HistoryQuery | undefined): MarketStatus {
   if (!query) return "idle";
   if (query.isFetching) return "loading";
@@ -179,6 +165,7 @@ export function AssetHistorySection({ base, availableMarkets }: AssetHistorySect
   }
 
   const visibleMarkets = HISTORY_MARKET_ORDER.filter((market) => availableMarkets.includes(market));
+  const selectedMarketSet = useMemo(() => new Set(selectedMarkets), [selectedMarkets]);
 
   const queries = useAssetHistoryQueries(base, fetchedDays, selectedMarkets);
 
@@ -186,6 +173,17 @@ export function AssetHistorySection({ base, availableMarkets }: AssetHistorySect
     () => new Map(selectedMarkets.map((market, index) => [market, queries[index]])),
     [selectedMarkets, queries]
   );
+
+  const marketStatuses = useMemo<Partial<Record<MarketKey, MarketStatus>>>(() => {
+    const map: Partial<Record<MarketKey, MarketStatus>> = {};
+    for (const market of visibleMarkets) {
+      const query = queryByMarket.get(market);
+      if (query) {
+        map[market] = getMarketStatus(query);
+      }
+    }
+    return map;
+  }, [visibleMarkets, queryByMarket]);
   const loadedRows = useMemo(
     () => queries.flatMap((query) => (query.data ? [query.data.row] : [])),
     [queries]
@@ -263,7 +261,13 @@ export function AssetHistorySection({ base, availableMarkets }: AssetHistorySect
         <div>
           <h2 className={styles.title}>Funding History and Pairwise Cumulative Spread</h2>
         </div>
-        <SourceChips sources={ASSET_HISTORY_SOURCES} marketKeys={visibleMarkets} />
+        <SourceChips
+          sources={ASSET_HISTORY_SOURCES}
+          marketKeys={visibleMarkets}
+          selectedKeys={selectedMarketSet}
+          onToggle={toggleMarket}
+          statuses={marketStatuses}
+        />
       </div>
 
       <div className={styles.controls}>
@@ -293,33 +297,6 @@ export function AssetHistorySection({ base, availableMarkets }: AssetHistorySect
           </div>
         </label>
 
-        <div className={styles.marketControls}>
-          <span className={styles.controlLabel}>Exchanges</span>
-          <div className={styles.marketList}>
-            {visibleMarkets.map((market) => {
-              const status = getMarketStatus(queryByMarket.get(market));
-              const statusLabel = marketStatusLabel[status];
-              return (
-                <label key={market} className={styles.marketOption} title={statusLabel}>
-                  <input
-                    type="checkbox"
-                    checked={selectedMarkets.includes(market)}
-                    onChange={() => toggleMarket(market)}
-                  />
-                  <span className={styles.marketText}>{MARKETS[market].label}</span>
-                  <span
-                    className={`${styles.statusDot} ${marketStatusClass[status]}`}
-                    role="img"
-                    aria-label={statusLabel}
-                  />
-                </label>
-              );
-            })}
-          </div>
-          <p className={styles.helperText}>
-            New assets start with Binance + OKX. Selecting an unchecked exchange downloads its history immediately.
-          </p>
-        </div>
       </div>
 
       <div className={styles.statusBlock}>

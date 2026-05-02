@@ -199,9 +199,9 @@ describe("AssetDetailPage", () => {
     expect(screen.getAllByText("龙虾USDT").length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "Funding History and Pairwise Cumulative Spread" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Apply" })).toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: /Binance Ready/i })).toBeChecked();
-    expect(screen.queryByRole("checkbox", { name: /OKX/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: /Gate\.io Not loaded/i })).not.toBeChecked();
+    expect(screen.getByRole("button", { name: /Binance Ready/i })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("button", { name: /OKX/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Gate\.io/i })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("heading", { name: "Funding + Price History" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Pairwise Cumulative Spread" })).toBeInTheDocument();
   });
