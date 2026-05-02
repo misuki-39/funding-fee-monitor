@@ -15,7 +15,7 @@ import { formatAbsoluteTime, formatPrice, formatRate } from "../../../shared/lib
 import type { AssetFundingHistoryMarketResponse } from "../../../shared/types/api.js";
 import type { AssetFundingHistoryRow, MarketKey } from "../../../shared/types/market.js";
 import { Button } from "../../../shared/ui/Button.js";
-import { SourceChips } from "../../../shared/ui/SourceChips.js";
+import { SourceChips, type SourceChipStatus } from "../../../shared/ui/SourceChips.js";
 import { StatusBanner } from "../../../shared/ui/StatusBanner.js";
 import { useAssetHistoryQueries } from "../api.js";
 import {
@@ -131,9 +131,8 @@ function trimRows(rows: AssetFundingHistoryRow[], days: number, fetchedDays: num
 }
 
 type HistoryQuery = UseQueryResult<AssetFundingHistoryMarketResponse, Error>;
-type MarketStatus = "idle" | "loading" | "ready" | "failed";
 
-function getMarketStatus(query: HistoryQuery | undefined): MarketStatus {
+function getMarketStatus(query: HistoryQuery | undefined): SourceChipStatus {
   if (!query) return "idle";
   if (query.isFetching) return "loading";
   if (query.isError) return "failed";
@@ -164,7 +163,10 @@ export function AssetHistorySection({ base, availableMarkets }: AssetHistorySect
     setSelectedMarkets(pruned.length > 0 ? pruned : pickInitialHistoryMarkets(base, availableMarkets));
   }
 
-  const visibleMarkets = HISTORY_MARKET_ORDER.filter((market) => availableMarkets.includes(market));
+  const visibleMarkets = useMemo(
+    () => HISTORY_MARKET_ORDER.filter((market) => availableMarkets.includes(market)),
+    [availableMarkets]
+  );
   const selectedMarketSet = useMemo(() => new Set(selectedMarkets), [selectedMarkets]);
 
   const queries = useAssetHistoryQueries(base, fetchedDays, selectedMarkets);
@@ -174,8 +176,8 @@ export function AssetHistorySection({ base, availableMarkets }: AssetHistorySect
     [selectedMarkets, queries]
   );
 
-  const marketStatuses = useMemo<Partial<Record<MarketKey, MarketStatus>>>(() => {
-    const map: Partial<Record<MarketKey, MarketStatus>> = {};
+  const marketStatuses = useMemo<Partial<Record<MarketKey, SourceChipStatus>>>(() => {
+    const map: Partial<Record<MarketKey, SourceChipStatus>> = {};
     for (const market of visibleMarkets) {
       const query = queryByMarket.get(market);
       if (query) {

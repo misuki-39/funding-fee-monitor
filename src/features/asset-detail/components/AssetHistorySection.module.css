@@ -24,8 +24,7 @@
   gap: 18px;
 }
 
-.daysControl,
-.marketControls {
+.daysControl {
   display: grid;
   gap: 10px;
 }
@@ -52,63 +51,6 @@
   border-radius: 14px;
   background: rgba(255, 250, 242, 0.9);
   color: var(--text);
-}
-
-.marketList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.marketOption {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(54, 41, 22, 0.12);
-  background: rgba(255, 250, 242, 0.88);
-  font-weight: 600;
-}
-
-.marketText {
-  color: var(--text);
-}
-
-.statusDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-  flex-shrink: 0;
-}
-
-.status_idle {
-  background: rgba(54, 41, 22, 0.25);
-}
-
-.status_loading {
-  background: #f59e0b;
-  animation: statusPulse 1.2s ease-in-out infinite;
-}
-
-.status_ready {
-  background: #10b981;
-}
-
-.status_failed {
-  background: #ef4444;
-}
-
-@keyframes statusPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
-.helperText {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.5;
 }
 
 .meta {

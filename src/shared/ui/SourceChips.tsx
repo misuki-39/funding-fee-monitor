@@ -35,37 +35,21 @@ export function SourceChips({ sources, marketKeys, selectedKeys, onToggle, statu
         const selected = !interactive || (selectedKeys?.has(key) ?? false);
         const status = statuses?.[key];
         const className = `${styles.chip} ${selected ? styles.selected : styles.unselected}`;
-        const dot = <span className={styles.dot} style={{ background: MARKET_COLORS[key] }} aria-hidden />;
-        const label = <span className={styles.label}>{MARKETS[key].label}</span>;
-        const statusDot = status && status !== "idle"
-          ? <span className={`${styles.statusDot} ${statusClass[status]}`} role="img" aria-label={statusLabel[status]} />
-          : null;
-        const tooltip = <span className={styles.tooltip} role="tooltip">{sources[key]}</span>;
 
-        if (interactive) {
-          return (
-            <button
-              key={key}
-              type="button"
-              className={className}
-              aria-pressed={selected}
-              onClick={() => onToggle?.(key)}
-            >
-              {dot}
-              {label}
-              {statusDot}
-              {tooltip}
-            </button>
-          );
-        }
+        const commonProps = interactive
+          ? { type: "button" as const, "aria-pressed": selected, onClick: () => onToggle(key) }
+          : { tabIndex: 0 };
+        const Element = interactive ? "button" : "span";
 
         return (
-          <span key={key} className={className} tabIndex={0}>
-            {dot}
-            {label}
-            {statusDot}
-            {tooltip}
-          </span>
+          <Element key={key} className={className} {...commonProps}>
+            <span className={styles.dot} style={{ background: MARKET_COLORS[key] }} aria-hidden />
+            <span className={styles.label}>{MARKETS[key].label}</span>
+            {status && status !== "idle" ? (
+              <span className={`${styles.statusDot} ${statusClass[status]}`} role="img" aria-label={statusLabel[status]} />
+            ) : null}
+            <span className={styles.tooltip} role="tooltip">{sources[key]}</span>
+          </Element>
         );
       })}
     </div>
