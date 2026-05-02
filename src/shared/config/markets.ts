@@ -2,6 +2,12 @@ import type { MarketConfig, MarketKey } from "../types/market.js";
 
 export const PAGE_SIZE = 10;
 
+// Hyperliquid builder-deployed perp DEXs we surface alongside the default universe.
+// Upstream prefixes their entry names (e.g. `xyz:CL`); the client strips this prefix
+// for routing while the server resolves bare bases back to the prefixed coin.
+export const HYPERLIQUID_BUILDER_DEXES = ["xyz"] as const;
+export type HyperliquidBuilderDex = (typeof HYPERLIQUID_BUILDER_DEXES)[number];
+
 export const ASSET_DETAIL_SOURCES: Record<MarketKey, string> = {
   okx: "funding-rate + mark-price",
   binance: "premiumIndex + fundingInfo",

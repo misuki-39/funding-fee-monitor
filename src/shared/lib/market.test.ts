@@ -60,6 +60,9 @@ describe("shared market helpers", () => {
     expect(extractBaseSymbol("gate", "龙虾_USDT")).toBe("龙虾");
     expect(extractBaseSymbol("grvt", "BTC_USDT_Perp")).toBe("BTC");
     expect(extractBaseSymbol("grvt", "AI16Z_USDT_Perp")).toBe("AI16Z");
+    expect(extractBaseSymbol("hyperliquid", "BTC")).toBe("BTC");
+    expect(extractBaseSymbol("hyperliquid", "xyz:CL")).toBe("CL");
+    expect(extractBaseSymbol("hyperliquid", "xyz:AAPL")).toBe("AAPL");
   });
 
   test("extractBaseSymbol normalizes OKX-only aliases to the canonical base", () => {

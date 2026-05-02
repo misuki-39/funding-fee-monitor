@@ -353,6 +353,29 @@ describe("exchange adapters", () => {
       });
     });
 
+    test("normalizeHyperliquidRow passes builder-DEX prefixed names through unchanged", () => {
+      const nowMs = Date.now();
+      expect(normalizeHyperliquidRow(
+        { name: "xyz:CL", szDecimals: 4, maxLeverage: 10 },
+        {
+          funding: "0.00000625",
+          markPx: "27515.0",
+          oraclePx: "27528.0",
+          midPx: "27515.5",
+          premium: "-0.0004540831",
+          openInterest: "12723.9192",
+          prevDayPx: "27419.0",
+          dayNtlVlm: "180199428.78"
+        },
+        nowMs
+      )).toEqual({
+        symbol: "xyz:CL",
+        fundingRate: 0.00000625,
+        cycleLabel: "1h",
+        settlementTimeMs: Date.UTC(2026, 4, 2, 4, 0, 0)
+      });
+    });
+
     test("normalizeHyperliquidAssetDetail reads funding rate and mark price", () => {
       expect(normalizeHyperliquidAssetDetail(
         { name: "kPEPE", szDecimals: 0, maxLeverage: 10 },

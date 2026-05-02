@@ -1,4 +1,5 @@
 import { toCanonicalBase, toExchangeBase } from "../config/assetAliases.js";
+import { HYPERLIQUID_BUILDER_DEXES } from "../config/markets.js";
 import type { MarketKey } from "../types/market.js";
 
 const binanceQuoteSuffixes = ["USDT", "USDC", "FDUSD", "BUSD", "TUSD"] as const;
@@ -42,6 +43,12 @@ function extractRawBase(market: MarketKey, symbol: string): string {
   }
 
   if (market === "hyperliquid") {
+    for (const dex of HYPERLIQUID_BUILDER_DEXES) {
+      const prefix = `${dex}:`;
+      if (symbol.startsWith(prefix)) {
+        return symbol.slice(prefix.length);
+      }
+    }
     return symbol;
   }
 

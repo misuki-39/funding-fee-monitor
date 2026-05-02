@@ -1,3 +1,4 @@
+import { HYPERLIQUID_BUILDER_DEXES, type HyperliquidBuilderDex } from "../../src/shared/config/markets.js";
 import { formatCycle } from "../../src/shared/lib/formatters.js";
 import type { AssetDetailMarketData, AssetFundingHistoryMarketData, AssetFundingHistoryPoint, FundingRow, PricePoint } from "../../src/shared/types/market.js";
 import { dedupeByTime } from "../lib/timeSeries.js";
@@ -7,6 +8,10 @@ const infoUrl = "https://api.hyperliquid.xyz/info";
 
 const fundingIntervalHours = 1;
 const hourMs = 60 * 60 * 1000;
+
+function isBuilderDex(value: string): value is HyperliquidBuilderDex {
+  return (HYPERLIQUID_BUILDER_DEXES as readonly string[]).includes(value);
+}
 
 interface HyperliquidUniverseEntry {
   name: string;
@@ -118,11 +123,16 @@ export function normalizeHyperliquidCandle(raw: HyperliquidCandleDto): PricePoin
   return { timeMs, price };
 }
 
-async function fetchMetaAndAssetCtxs(): Promise<MetaAndAssetCtxs> {
+async function fetchMetaAndAssetCtxs(dex?: HyperliquidBuilderDex): Promise<MetaAndAssetCtxs> {
+  const body: { type: "metaAndAssetCtxs"; dex?: HyperliquidBuilderDex } = { type: "metaAndAssetCtxs" };
+  if (dex) {
+    body.dex = dex;
+  }
+
   const payload = await postUpstreamJson<MetaAndAssetCtxs>(
     infoUrl,
-    { type: "metaAndAssetCtxs" },
-    "Hyperliquid metaAndAssetCtxs API"
+    body,
+    `Hyperliquid metaAndAssetCtxs API${dex ? ` (dex=${dex})` : ""}`
   );
 
   if (!Array.isArray(payload) || payload.length !== 2 || !Array.isArray(payload[0]?.universe) || !Array.isArray(payload[1])) {
@@ -136,30 +146,72 @@ async function fetchMetaAndAssetCtxs(): Promise<MetaAndAssetCtxs> {
   return payload;
 }
 
+async function fetchAllUniverses(): Promise<MetaAndAssetCtxs[]> {
+  return Promise.all([
+    fetchMetaAndAssetCtxs(),
+    ...HYPERLIQUID_BUILDER_DEXES.map((dex) => fetchMetaAndAssetCtxs(dex))
+  ]);
+}
+
 export async function fetchHyperliquidRows(): Promise<FundingRow[]> {
-  const [meta, ctxs] = await fetchMetaAndAssetCtxs();
+  const responses = await fetchAllUniverses();
   const nowMs = Date.now();
 
-  return meta.universe
-    .map((entry, index) => ({ entry, ctx: ctxs[index] }))
-    .filter(({ entry }) => !entry.isDelisted)
-    .map(({ entry, ctx }) => normalizeHyperliquidRow(entry, ctx, nowMs));
+  return responses.flatMap(([meta, ctxs]) =>
+    meta.universe
+      .map((entry, index) => ({ entry, ctx: ctxs[index] }))
+      .filter(({ entry }) => !entry.isDelisted)
+      .map(({ entry, ctx }) => normalizeHyperliquidRow(entry, ctx, nowMs))
+  );
+}
+
+function dexForCoin(coin: string): HyperliquidBuilderDex | undefined {
+  const colon = coin.indexOf(":");
+  if (colon <= 0) {
+    return undefined;
+  }
+  const prefix = coin.slice(0, colon);
+  return isBuilderDex(prefix) ? prefix : undefined;
+}
+
+// Resolve a coin reference (`BTC`, `xyz:CL`, or a bare builder-DEX base like `CL`)
+// into the upstream entry + ctx. Bare bases match either the default universe or
+// `<dex>:<coin>` in any builder universe; default takes precedence on collision.
+async function resolveUpstreamPerp(coin: string): Promise<{
+  entry: HyperliquidUniverseEntry;
+  ctx: HyperliquidAssetCtx;
+}> {
+  const explicitDex = dexForCoin(coin);
+  if (explicitDex) {
+    const [meta, ctxs] = await fetchMetaAndAssetCtxs(explicitDex);
+    const index = meta.universe.findIndex((entry) => entry.name === coin);
+    if (index === -1) {
+      throw new Error(`Hyperliquid universe does not contain coin: ${coin}`);
+    }
+    return { entry: meta.universe[index], ctx: ctxs[index] };
+  }
+
+  const responses = await fetchAllUniverses();
+  for (const [meta, ctxs] of responses) {
+    const index = meta.universe.findIndex(
+      (entry) => entry.name === coin || entry.name.endsWith(`:${coin}`)
+    );
+    if (index !== -1) {
+      return { entry: meta.universe[index], ctx: ctxs[index] };
+    }
+  }
+
+  throw new Error(`Hyperliquid universe does not contain coin: ${coin}`);
 }
 
 export async function fetchHyperliquidAssetDetail(coin: string): Promise<AssetDetailMarketData> {
-  const [meta, ctxs] = await fetchMetaAndAssetCtxs();
+  const { entry, ctx } = await resolveUpstreamPerp(coin);
 
-  const index = meta.universe.findIndex((entry) => entry.name === coin);
-  if (index === -1) {
-    throw new Error(`Hyperliquid universe does not contain coin: ${coin}`);
-  }
-
-  const entry = meta.universe[index];
   if (entry.isDelisted) {
     throw new Error(`Hyperliquid coin is delisted: ${coin}`);
   }
 
-  return normalizeHyperliquidAssetDetail(entry, ctxs[index]);
+  return normalizeHyperliquidAssetDetail(entry, ctx);
 }
 
 async function fetchHyperliquidFundingHistoryPage(
@@ -210,13 +262,15 @@ export async function fetchHyperliquidAssetHistory(
   startTimeMs: number,
   endTimeMs: number
 ): Promise<AssetFundingHistoryMarketData> {
+  const upstreamCoin = dexForCoin(coin) ? coin : (await resolveUpstreamPerp(coin)).entry.name;
+
   const [fundingRows, candleRows] = await Promise.all([
-    fetchHyperliquidFundingHistory(coin, startTimeMs, endTimeMs),
+    fetchHyperliquidFundingHistory(upstreamCoin, startTimeMs, endTimeMs),
     postUpstreamJson<HyperliquidCandleDto[]>(
       infoUrl,
       {
         type: "candleSnapshot",
-        req: { coin, interval: "1h", startTime: startTimeMs, endTime: endTimeMs }
+        req: { coin: upstreamCoin, interval: "1h", startTime: startTimeMs, endTime: endTimeMs }
       },
       "Hyperliquid candleSnapshot API"
     )
@@ -241,7 +295,7 @@ export async function fetchHyperliquidAssetHistory(
   );
 
   return {
-    symbol: coin,
+    symbol: upstreamCoin,
     points,
     pricePoints
   };
