@@ -3,6 +3,12 @@ import type { MarketKey } from "../types/market.js";
 const exchangeBaseAliases: Partial<Record<MarketKey, Record<string, string>>> = {
   okx: {
     AI: "AIGENSYN"
+  },
+  hyperliquid: {
+    kPEPE: "1000PEPE",
+    kSHIB: "1000SHIB",
+    kBONK: "1000BONK",
+    kFLOKI: "1000FLOKI"
   }
 };
 

@@ -41,6 +41,10 @@ function extractRawBase(market: MarketKey, symbol: string): string {
     return symbol.slice(0, -grvtSuffix.length);
   }
 
+  if (market === "hyperliquid") {
+    return symbol;
+  }
+
   if (!symbol.includes("_")) {
     throw new Error(`Unsupported Gate.io symbol: ${symbol}`);
   }
@@ -62,6 +66,10 @@ export function buildAssetSymbol(market: MarketKey, base: string): string {
 
   if (market === "grvt") {
     return `${exchangeBase}${grvtSuffix}`;
+  }
+
+  if (market === "hyperliquid") {
+    return exchangeBase;
   }
 
   return `${exchangeBase}_USDT`;

@@ -3,7 +3,7 @@ import type { MarketKey } from "../../../shared/types/market.js";
 
 const HISTORY_PREFERENCES_STORAGE_KEY = "asset-history-preferences-v1";
 
-export const HISTORY_MARKET_ORDER: MarketKey[] = ["binance", "okx", "gate", "bitget", "bybit", "grvt", "aster"];
+export const HISTORY_MARKET_ORDER: MarketKey[] = ["binance", "okx", "gate", "bitget", "bybit", "grvt", "aster", "hyperliquid"];
 export const DEFAULT_GLOBAL_HISTORY_MARKETS: MarketKey[] = ["binance", "okx"];
 
 interface HistoryPreferences {

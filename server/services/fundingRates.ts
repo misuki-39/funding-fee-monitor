@@ -4,6 +4,7 @@ import { fetchBitgetRows } from "../exchanges/bitget.js";
 import { fetchBybitRows } from "../exchanges/bybit.js";
 import { fetchGateRows } from "../exchanges/gate.js";
 import { fetchGrvtRows } from "../exchanges/grvt.js";
+import { fetchHyperliquidRows } from "../exchanges/hyperliquid.js";
 import { fetchOkxRows } from "../exchanges/okx.js";
 import type { FundingRow, MarketKey } from "../../src/shared/types/market.js";
 
@@ -14,7 +15,8 @@ const marketFetchers: Record<MarketKey, () => Promise<FundingRow[]>> = {
   bitget: fetchBitgetRows,
   bybit: fetchBybitRows,
   grvt: fetchGrvtRows,
-  aster: fetchAsterRows
+  aster: fetchAsterRows,
+  hyperliquid: fetchHyperliquidRows
 };
 
 export function fetchFundingRatesByMarket(market: MarketKey) {

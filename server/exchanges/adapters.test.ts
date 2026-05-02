@@ -1,6 +1,12 @@
-import { describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { mergeAsterRows, normalizeAsterAssetDetail, normalizeAsterHistoryPoint } from "./aster.js";
 import { mergeBinanceRows, normalizeBinanceAssetDetail, normalizeBinanceHistoryPoint } from "./binance.js";
+import {
+  normalizeHyperliquidAssetDetail,
+  normalizeHyperliquidCandle,
+  normalizeHyperliquidFundingHistoryPoint,
+  normalizeHyperliquidRow
+} from "./hyperliquid.js";
 import { normalizeBitgetAssetDetail, normalizeBitgetCandle, normalizeBitgetFundingHistoryPoint, normalizeBitgetRow } from "./bitget.js";
 import {
   createBybitIntervalMap,
@@ -310,6 +316,92 @@ describe("exchange adapters", () => {
     })).toEqual({
       fundingTimeMs: 1570608000000,
       fundingRate: -0.0375
+    });
+  });
+
+  describe("hyperliquid", () => {
+    beforeEach(() => {
+      // 2026-05-02 03:14:55.000 UTC — used to verify settlementTimeMs rounds up to next top-of-hour.
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-05-02T03:14:55.000Z"));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    test("normalizeHyperliquidRow hardcodes 1h cycle and rounds settlement to next top-of-hour", () => {
+      const nowMs = Date.now();
+      expect(normalizeHyperliquidRow(
+        { name: "BTC", szDecimals: 5, maxLeverage: 40 },
+        {
+          funding: "-0.0000015626",
+          markPx: "78179.0",
+          oraclePx: "78225.0",
+          midPx: "78176.5",
+          premium: "-0.0006136146",
+          openInterest: "28566.16356",
+          prevDayPx: "77035.0",
+          dayNtlVlm: "0"
+        },
+        nowMs
+      )).toEqual({
+        symbol: "BTC",
+        fundingRate: -0.0000015626,
+        cycleLabel: "1h",
+        settlementTimeMs: Date.UTC(2026, 4, 2, 4, 0, 0)
+      });
+    });
+
+    test("normalizeHyperliquidAssetDetail reads funding rate and mark price", () => {
+      expect(normalizeHyperliquidAssetDetail(
+        { name: "kPEPE", szDecimals: 0, maxLeverage: 10 },
+        {
+          funding: "0.0000125",
+          markPx: "0.001234",
+          oraclePx: "0.001234",
+          midPx: "0.001234",
+          premium: "0",
+          openInterest: "0",
+          prevDayPx: "0.001230",
+          dayNtlVlm: "0"
+        }
+      )).toEqual({
+        symbol: "kPEPE",
+        fundingRate: 0.0000125,
+        markPrice: 0.001234,
+        cycleLabel: "1h"
+      });
+    });
+
+    test("normalizeHyperliquidFundingHistoryPoint drops premium and reads ms timestamp", () => {
+      expect(normalizeHyperliquidFundingHistoryPoint({
+        coin: "BTC",
+        fundingRate: "0.0000125",
+        premium: "-0.0002417314",
+        time: 1714521600016
+      })).toEqual({
+        fundingTimeMs: 1714521600016,
+        fundingRate: 0.0000125
+      });
+    });
+
+    test("normalizeHyperliquidCandle uses open price as PricePoint price", () => {
+      expect(normalizeHyperliquidCandle({
+        t: 1776999600000,
+        T: 1777003199999,
+        s: "BTC",
+        i: "1h",
+        o: "78089.0",
+        c: "77710.0",
+        h: "78142.0",
+        l: "77505.0",
+        v: "864.78186",
+        n: 19979
+      })).toEqual({
+        timeMs: 1776999600000,
+        price: 78089
+      });
     });
   });
 

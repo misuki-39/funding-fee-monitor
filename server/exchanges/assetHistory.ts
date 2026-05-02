@@ -6,6 +6,7 @@ import { fetchBitgetAssetHistory } from "./bitget.js";
 import { fetchBybitAssetHistory } from "./bybit.js";
 import { fetchGateAssetHistory } from "./gate.js";
 import { fetchGrvtAssetHistory } from "./grvt.js";
+import { fetchHyperliquidAssetHistory } from "./hyperliquid.js";
 import { fetchOkxAssetHistory } from "./okx.js";
 
 const assetHistoryFetchers: Record<MarketKey, (symbol: string, startTimeMs: number, endTimeMs: number) => Promise<AssetFundingHistoryMarketData>> = {
@@ -15,7 +16,8 @@ const assetHistoryFetchers: Record<MarketKey, (symbol: string, startTimeMs: numb
   bitget: fetchBitgetAssetHistory,
   bybit: fetchBybitAssetHistory,
   grvt: fetchGrvtAssetHistory,
-  aster: fetchAsterAssetHistory
+  aster: fetchAsterAssetHistory,
+  hyperliquid: fetchHyperliquidAssetHistory
 };
 
 export function createAssetHistoryRow(

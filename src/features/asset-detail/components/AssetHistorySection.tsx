@@ -38,7 +38,8 @@ const marketColors: Record<MarketKey, string> = {
   bitget: "#1d4ed8",
   bybit: "#f59e0b",
   grvt: "#0ea5e9",
-  aster: "#a855f7"
+  aster: "#a855f7",
+  hyperliquid: "#22c55e"
 };
 
 const pairColors = ["#2563eb", "#d946ef", "#ea580c", "#0d9488", "#7c3aed", "#dc2626"];

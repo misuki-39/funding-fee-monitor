@@ -2,11 +2,11 @@ import type { MarketConfig, MarketKey } from "../types/market.js";
 
 export const PAGE_SIZE = 10;
 export const ASSET_DETAIL_SOURCE_LABEL =
-  "Binance premiumIndex + fundingInfo | OKX funding-rate + mark-price | Gate contract detail | Bitget current-fund-rate + symbol-price | Bybit tickers + instruments-info | GRVT ticker + instrument | Aster premiumIndex + fundingInfo";
+  "Binance premiumIndex + fundingInfo | OKX funding-rate + mark-price | Gate contract detail | Bitget current-fund-rate + symbol-price | Bybit tickers + instruments-info | GRVT ticker + instrument | Aster premiumIndex + fundingInfo | Hyperliquid metaAndAssetCtxs";
 export const ASSET_HISTORY_SOURCE_LABEL =
-  "Binance fundingRate | OKX funding-rate-history + history-mark-price-candles | Gate funding_rate + candlesticks | Bitget history-fund-rate + candles(MARK) | Bybit funding/history + mark-price-kline | GRVT funding + kline(MARK) | Aster fundingRate + markPriceKlines";
+  "Binance fundingRate | OKX funding-rate-history + history-mark-price-candles | Gate funding_rate + candlesticks | Bitget history-fund-rate + candles(MARK) | Bybit funding/history + mark-price-kline | GRVT funding + kline(MARK) | Aster fundingRate + markPriceKlines | Hyperliquid fundingHistory + candleSnapshot";
 
-export const MARKET_KEYS: MarketKey[] = ["okx", "binance", "gate", "bitget", "bybit", "grvt", "aster"];
+export const MARKET_KEYS: MarketKey[] = ["okx", "binance", "gate", "bitget", "bybit", "grvt", "aster", "hyperliquid"];
 
 export const MARKETS: Record<MarketKey, MarketConfig> = {
   okx: {
@@ -50,9 +50,15 @@ export const MARKETS: Record<MarketKey, MarketConfig> = {
     label: "Aster",
     title: "Aster Funding Rate",
     sourceUrl: "https://fapi.asterdex.com/fapi/v3/premiumIndex + /fapi/v3/fundingInfo"
+  },
+  hyperliquid: {
+    key: "hyperliquid",
+    label: "Hyperliquid",
+    title: "Hyperliquid Funding Rate",
+    sourceUrl: "https://api.hyperliquid.xyz/info (metaAndAssetCtxs)"
   }
 };
 
 export function isMarketKey(value: string): value is MarketKey {
-  return value === "okx" || value === "binance" || value === "gate" || value === "bitget" || value === "bybit" || value === "grvt" || value === "aster";
+  return value === "okx" || value === "binance" || value === "gate" || value === "bitget" || value === "bybit" || value === "grvt" || value === "aster" || value === "hyperliquid";
 }

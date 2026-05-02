@@ -6,9 +6,10 @@ import { fetchBitgetAssetDetail } from "./bitget.js";
 import { fetchBybitAssetDetail } from "./bybit.js";
 import { fetchGateAssetDetail } from "./gate.js";
 import { fetchGrvtAssetDetail } from "./grvt.js";
+import { fetchHyperliquidAssetDetail } from "./hyperliquid.js";
 import { fetchOkxAssetDetail } from "./okx.js";
 
-const detailMarketOrder: MarketKey[] = ["okx", "binance", "gate", "bitget", "bybit", "grvt", "aster"];
+const detailMarketOrder: MarketKey[] = ["okx", "binance", "gate", "bitget", "bybit", "grvt", "aster", "hyperliquid"];
 
 const assetDetailFetchers: Record<MarketKey, (symbol: string) => Promise<AssetDetailMarketData>> = {
   okx: fetchOkxAssetDetail,
@@ -17,7 +18,8 @@ const assetDetailFetchers: Record<MarketKey, (symbol: string) => Promise<AssetDe
   bitget: fetchBitgetAssetDetail,
   bybit: fetchBybitAssetDetail,
   grvt: fetchGrvtAssetDetail,
-  aster: fetchAsterAssetDetail
+  aster: fetchAsterAssetDetail,
+  hyperliquid: fetchHyperliquidAssetDetail
 };
 
 export function createAssetDetailRow(
